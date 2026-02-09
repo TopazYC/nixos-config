@@ -135,9 +135,9 @@ services.openssh = {
     X11Forwarding = true;
     AllowTcpForwarding = true;
   AllowUsers = [ "Topaz" ];
+  DenyUsers = [ "root" ];
   };
   ports = [35555];
-  denyUsers = [ "root" ];
   openFirewall = true;
 };
 
