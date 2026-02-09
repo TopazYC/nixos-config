@@ -134,9 +134,9 @@ services.openssh = {
     ChallengeResponseAuthentication = false;
     X11Forwarding = true;
     AllowTcpForwarding = true;
+  AllowUsers = [ "Topaz" ];
   };
   ports = [35555];
-  allowUsers = [ "Topaz" ];
   denyUsers = [ "root" ];
   openFirewall = true;
 };
