@@ -76,7 +76,6 @@
     };
   };
   programs.niri.enable = true;
-  programs.hyprland.enable = true;
   services.displayManager.defaultSession = "niri";
 
 
@@ -123,4 +122,24 @@
     pulse.enable = true;
     jack.enable = true;
 };
+
+
+service.openssh = {
+  enable = true;
+  settings = {
+    PasswordAuthentication = false;
+    PermitRootLogin = "no";
+    PermitEmptyPasswords = false;
+    KbdInteractiveAuthentication = false;
+    ChallengeResponseAuthentication = false;
+    X11Forwarding = true;
+    AllowTcpForwarding = true;
+  };
+  ports = [35555];
+  allowoUsers = [ "Topaz" ];
+  denyUsers = [ "root" ];
+  openFirewall = true;
+};
+
+
 }
