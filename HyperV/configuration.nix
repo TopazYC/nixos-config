@@ -36,17 +36,19 @@
   # set the default editor to be vim
   environment.variables.EDITOR = "vim";
 
+  users.mutableUsers = false;
   users.users.Topaz = {
     isNormalUser = true;
     description = "Topaz";
     extraGroups = ["networkmanager" "wheel" "audio"];
     uid = 1000;
-    initialPassword = "123456";
+
     packages = with pkgs; [ ];
+    hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
   };
 
   users.users.root = {
-    initialPassword = "123456";
+    hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
   };
 
   nixpkgs.config.allowUnfree = true;
