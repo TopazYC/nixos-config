@@ -20,14 +20,30 @@
   };
   programs.ssh = {
     enable = true;
-    extraConfig = ''
-      Host github.com
-	HostName github.com
-        User git
-	IdentityFile ~/.ssh/id_github
-	IdentitiesOnly yes
-	StrictHostKeyChecking accept-new
-	UserKnownHostsFile ~/.ssh/known_hosts
-    '';
+    enableDefaultConfig = false;
+    matchBlocks = {
+      "*" = {
+        forwardAgent = false;
+        serverAliveInterval = 0;
+        serverAliveCountMax = 3;
+        compression = false;
+        addKeysToAgent = "no";
+        hashKnownHosts = false;
+        userKnownHostsFile = "~/.ssh/known_hosts";
+        controlMaster = "auto";
+        controlPath = "~/.ssh/master-%r@%h:%p";
+        controlPersist = "yes";
+        # strictHostKeyChecking = "accept-new";
+      };
+      "github.com" = {
+        hostname = "github.com";
+        user = "git";
+        identityFile = "~/.ssh/id_github";
+        identitiesOnly = true;
+        extraOptions = {
+          StrictHostKeyChecking = "accept-new";
+        };
+      };
+    };
   };
 }
