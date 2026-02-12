@@ -13,8 +13,10 @@
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  virtualisation.hypervGuest.enable = true;
 
   networking.networkmanager.enable = true;
+  
 
   time.timeZone = "Asia/Shanghai";
 
