@@ -4,7 +4,7 @@
   home.homeDirectory = "/home/Topaz";
 
   home.packages = with pkgs; [
-
+    ssh-to-age
   ];
   home.stateVersion = "25.11";
 

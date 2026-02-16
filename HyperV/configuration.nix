@@ -20,7 +20,7 @@
 
   time.timeZone = "Asia/Shanghai";
 
-  networking.proxy.default = "http://172.27.240.1:7890/";
+  networking.proxy.default = "http://YCROAKER-LAPTOP:7890/";
   networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
   i18n.defaultLocale = "en_US.UTF-8";
