@@ -42,12 +42,12 @@
     };
 
     nixosConfigurations.HyperV = nixpkgs.lib.nixosSystem {
+
       system = "x86_64-linux";
       specialArgs = {
         inherit nixpkgs-unstable;
       };
       modules = [ 
-        nixos-wsl.nixosModules.wsl
         ./HyperV/configuration.nix 
         ./HyperV/hardware-configuration.nix
 

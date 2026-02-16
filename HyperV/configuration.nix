@@ -10,7 +10,7 @@
 {
   system.stateVersion = "25.11";
   networking.hostName = "HyperV"; 
-  systemd.package = nixpkgs-unstable.legacyPackages.${pkgs.system}.systemd;
+  # systemd.package = nixpkgs-unstable.legacyPackages.${pkgs.system}.systemd;
   nix.settings.substituters = [
     "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/store"
     "https://cache.nixos.org"
