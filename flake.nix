@@ -9,6 +9,8 @@
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     agenix.url = "github:ryantm/agenix";
     agenix.inputs.nixpkgs.follows = "nixpkgs";
+    sops-nix.url = "github:Mic92/sops-nix";
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
     # Extras (imported directly by modules/hosts that need them)
     dms.url = "github:AvengeMedia/DankMaterialShell";
@@ -18,7 +20,7 @@
     nixos-hardware.url = "github:nixos/nixos-hardware";
   
   };
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixos-wsl, home-manager, ... }@inputs :{
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixos-wsl, home-manager, sops-nix, ... }@inputs :{
     nixosConfigurations.YC-NixOS = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [ 
@@ -41,6 +43,9 @@
 
     nixosConfigurations.HyperV = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
+      specialArgs = {
+        inherit nixpkgs-unstable;
+      };
       modules = [ 
         nixos-wsl.nixosModules.wsl
         ./HyperV/configuration.nix 
