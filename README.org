@@ -2,3 +2,5 @@
 
 This is my first try to learn NixOS and build my own configuration block by block.
 
+** BUGS
+1. there is a vsock bug of systemd on Hyper-V. This will be solved in v360 in the future.`
