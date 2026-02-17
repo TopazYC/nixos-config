@@ -5,7 +5,7 @@
 # NixOS-WSL specific options are documented on the NixOS-WSL repository:
 # https://github.com/nix-community/NixOS-WSL
 
-{ config, lib, pkgs, nixpkgs-unstable, ... }:
+{ config, lib, pkgs, nixpkgs-unstable, sops-nix, ... }:
 
 {
   system.stateVersion = "25.11";
@@ -49,11 +49,13 @@
     uid = 1000;
 
     packages = with pkgs; [ ];
-    hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
+    #hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
+    hashedPasswordFile = config.sops.secrets.host_user_password.path;
   };
 
   users.users.root = {
-    hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
+    hashedPasswordFile = config.sops.secrets.host_root_password.path;
+    #hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
   };
 
   nixpkgs.config.allowUnfree = true;

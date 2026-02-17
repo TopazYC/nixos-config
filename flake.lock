@@ -311,7 +311,21 @@
         "nixos-wsl": "nixos-wsl",
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-unstable": "nixpkgs-unstable",
+        "secrets": "secrets",
         "sops-nix": "sops-nix"
+      }
+    },
+    "secrets": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1771308646,
+        "narHash": "sha256-Ogroh5wmOOwD8KvV8Z6vk6BRghJ+uJy740N1CJHWBgo=",
+        "path": "/home/Topaz/secrets",
+        "type": "path"
+      },
+      "original": {
+        "path": "/home/Topaz/secrets",
+        "type": "path"
       }
     },
     "sops-nix": {

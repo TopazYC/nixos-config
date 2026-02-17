@@ -18,7 +18,7 @@
       pull.rebase = false;
       
       gpg.format = "ssh";
-      user.signingkey = "~/.ssh/sign_github.pub";
+      user.signingkey = "~/.ssh/github_sign.pub";
       commit.gpgsign = true;
       tag.gpgsign = true;
     };
@@ -44,7 +44,7 @@
       "github.com" = {
         hostname = "github.com";
         user = "git";
-        identityFile = "~/.ssh/id_github";
+        identityFile = "~/.ssh/github_id";
         identitiesOnly = true;
         extraOptions = {
           StrictHostKeyChecking = "accept-new";

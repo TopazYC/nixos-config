@@ -19,8 +19,13 @@
     emacs-overlay.inputs.nixpkgs.follows = "nixpkgs";
     nixos-hardware.url = "github:nixos/nixos-hardware";
   
+
+    secrets = {
+      url = "path:/home/Topaz/secrets";
+      flake = false;
+    };
   };
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixos-wsl, home-manager, sops-nix, ... }@inputs :{
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixos-wsl, home-manager, sops-nix, secrets, ... }@inputs :{
     nixosConfigurations.YC-NixOS = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [ 
@@ -33,9 +38,6 @@
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
           home-manager.users.Topaz = import ./WSL/home.nix;
-
-          # 使用 home-manager.extraSpecialArgs 自定义传递给 ./home.nix 的参数
-          # 取消注释下面这一行，就可以在 home.nix 中使用 flake 的所有 inputs 参数了
           # home-manager.extraSpecialArgs = inputs;
         }
       ];
@@ -45,11 +47,12 @@
 
       system = "x86_64-linux";
       specialArgs = {
-        inherit nixpkgs-unstable;
+        inherit nixpkgs-unstable sops-nix secrets;
       };
       modules = [ 
         ./HyperV/configuration.nix 
         ./HyperV/hardware-configuration.nix
+        ./secret
 
         home-manager.nixosModules.home-manager
 
@@ -57,9 +60,6 @@
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
           home-manager.users.Topaz = import ./HyperV/home.nix;
-
-          # 使用 home-manager.extraSpecialArgs 自定义传递给 ./home.nix 的参数
-          # 取消注释下面这一行，就可以在 home.nix 中使用 flake 的所有 inputs 参数了
           # home-manager.extraSpecialArgs = inputs;
         }
       ];
