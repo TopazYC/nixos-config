@@ -169,15 +169,16 @@
       "locked": {
         "lastModified": 1771309568,
         "narHash": "sha256-eN1ylx0fO7DDxBAwCoJ2CK0VsDbqAZ+fpwDDfDufAUY=",
-        "owner": "TopazYC",
-        "repo": "secrets",
+        "ref": "refs/heads/main",
         "rev": "4c434c6f3095c6e6477351a38d6ce8682b9154ce",
-        "type": "github"
+        "shallow": true,
+        "type": "git",
+        "url": "ssh://git@github.com/TopazYC/secrets.git"
       },
       "original": {
-        "owner": "TopazYC",
-        "repo": "secrets",
-        "type": "github"
+        "shallow": true,
+        "type": "git",
+        "url": "ssh://git@github.com/TopazYC/secrets.git"
       }
     },
     "nixos-hardware": {

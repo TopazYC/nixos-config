@@ -21,7 +21,7 @@
   
 
     mysecrets = {
-      url = "github:TopazYC/secrets";
+      url = "git+ssh://git@github.com/TopazYC/secrets.git?shallow=1";
       flake = false;
     };
   };
