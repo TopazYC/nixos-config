@@ -164,6 +164,22 @@
         "type": "github"
       }
     },
+    "mysecrets": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1771309568,
+        "narHash": "sha256-eN1ylx0fO7DDxBAwCoJ2CK0VsDbqAZ+fpwDDfDufAUY=",
+        "owner": "TopazYC",
+        "repo": "secrets",
+        "rev": "4c434c6f3095c6e6477351a38d6ce8682b9154ce",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TopazYC",
+        "repo": "secrets",
+        "type": "github"
+      }
+    },
     "nixos-hardware": {
       "locked": {
         "lastModified": 1769302137,
@@ -307,25 +323,12 @@
         "emacs-overlay": "emacs-overlay",
         "home-manager": "home-manager_2",
         "home-manager-wsl": "home-manager-wsl",
+        "mysecrets": "mysecrets",
         "nixos-hardware": "nixos-hardware",
         "nixos-wsl": "nixos-wsl",
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-unstable": "nixpkgs-unstable",
-        "secrets": "secrets",
         "sops-nix": "sops-nix"
-      }
-    },
-    "secrets": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1771308646,
-        "narHash": "sha256-Ogroh5wmOOwD8KvV8Z6vk6BRghJ+uJy740N1CJHWBgo=",
-        "path": "/home/Topaz/secrets",
-        "type": "path"
-      },
-      "original": {
-        "path": "/home/Topaz/secrets",
-        "type": "path"
       }
     },
     "sops-nix": {

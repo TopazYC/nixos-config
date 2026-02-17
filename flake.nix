@@ -20,12 +20,12 @@
     nixos-hardware.url = "github:nixos/nixos-hardware";
   
 
-    secrets = {
-      url = "path:/home/Topaz/secrets";
+    mysecrets = {
+      url = "github:TopazYC/secrets";
       flake = false;
     };
   };
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixos-wsl, home-manager, sops-nix, secrets, ... }@inputs :{
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixos-wsl, home-manager, sops-nix, mysecrets, ... }@inputs :{
     nixosConfigurations.YC-NixOS = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [ 
@@ -47,7 +47,7 @@
 
       system = "x86_64-linux";
       specialArgs = {
-        inherit nixpkgs-unstable sops-nix secrets;
+        inherit nixpkgs-unstable sops-nix mysecrets;
       };
       modules = [ 
         ./HyperV/configuration.nix 

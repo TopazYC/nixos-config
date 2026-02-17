@@ -39,7 +39,6 @@
         controlMaster = "auto";
         controlPath = "~/.ssh/master-%r@%h:%p";
         controlPersist = "yes";
-        # strictHostKeyChecking = "accept-new";
       };
       "github.com" = {
         hostname = "github.com";

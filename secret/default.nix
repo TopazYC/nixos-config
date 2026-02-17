@@ -1,4 +1,4 @@
-{ config, pkgs, sops-nix, secrets, ...}:
+{ config, pkgs, sops-nix, mysecrets, ...}:
 let
   noaccess = {
     mode = "0000";
@@ -28,27 +28,27 @@ in
   };
   sops.secrets = {
     "host_user_password" = {
-      sopsFile = "${secrets}/secrets/hyperv.yaml";
+      sopsFile = "${mysecrets}/secrets/hyperv.yaml";
       neededForUsers = true;
     };
     "host_root_password" = {
-      sopsFile = "${secrets}/secrets/hyperv.yaml";
+      sopsFile = "${mysecrets}/secrets/hyperv.yaml";
       neededForUsers = true;
     };
     "github_id" = {
-      sopsFile = "${secrets}/secrets/hyperv.yaml";
+      sopsFile = "${mysecrets}/secrets/hyperv.yaml";
       path = "/home/Topaz/.ssh/github_id";
     } // user_readable;
     "github_id_pub" = {
-      sopsFile = "${secrets}/secrets/hyperv.yaml";
+      sopsFile = "${mysecrets}/secrets/hyperv.yaml";
       path = "/home/Topaz/.ssh/github_id.pub";
     } // user_readable;
     "github_sign" = {
-      sopsFile = "${secrets}/secrets/hyperv.yaml";
+      sopsFile = "${mysecrets}/secrets/hyperv.yaml";
       path = "/home/Topaz/.ssh/github_sign";
     } // user_readable;
     "github_sign_pub" = {
-      sopsFile = "${secrets}/secrets/hyperv.yaml";
+      sopsFile = "${mysecrets}/secrets/hyperv.yaml";
       path = "/home/Topaz/.ssh/github_sign.pub";
     } // user_readable;
   };
