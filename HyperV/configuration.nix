@@ -5,12 +5,16 @@
 # NixOS-WSL specific options are documented on the NixOS-WSL repository:
 # https://github.com/nix-community/NixOS-WSL
 
-{ config, lib, pkgs, nixpkgs-unstable, sops-nix, ... }:
+{ config, lib, pkgs, nixpkgs-unstable, inputs, sops-nix, ... }:
 
 {
+  imports = [
+    ../os/desktop.nix
+  ];
+
   system.stateVersion = "25.11";
   networking.hostName = "HyperV"; 
-  # systemd.package = nixpkgs-unstable.legacyPackages.${pkgs.system}.systemd;
+
   nix.settings.substituters = [
     "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/store"
     "https://cache.nixos.org"
@@ -18,6 +22,7 @@
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.kernelParams = ["video=hyperv_fb:1920*1080"];
   virtualisation.hypervGuest.enable = true;
 
   networking.networkmanager.enable = true;
@@ -63,6 +68,7 @@
   environment.systemPackages = with pkgs; [
     git vim wget curl
     alacritty # Terminal Emulator
+    weston
   ];
 
   services.pulseaudio.enable = false;
@@ -99,5 +105,10 @@ services.openssh = {
     clean.extraArgs = "--keep-since 7d --keep 15";
     flake = "/etc/nixos";
   };
+
+  programs.niri.enable = true;
+  programs.hyprland.enable = true;
+
+  #modules.desktop.wayland.enable = true;
 
 }
