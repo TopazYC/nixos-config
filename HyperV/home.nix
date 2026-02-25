@@ -1,19 +1,21 @@
 { config, pkgs, inputs, ... }:
 {
-  imports = [
-    ../home/niri
 
-    inputs.noctalia.homeModules.default
-  ];
   home.username = "Topaz";
   home.homeDirectory = "/home/Topaz";
+
+  imports = [
+    ../home/niri
+    ../home/noctalia
+  ];
+
   home.stateVersion = "25.11";
 
   home.packages = with pkgs; [
     ssh-to-age
   ];
 
-  #modules.desktop.niri.enable = true;
+  modules.desktop.niri.enable = true;
 
   programs.git = {
     enable = true;
@@ -75,7 +77,7 @@
     "XDG_SESSION_TYPE" = "wayland";
   };
   
-  programs.noctalia-shell = {
-    enable = true;
-  };
+#  programs.noctalia-shell = {
+#    enable = true;
+#  };
 }

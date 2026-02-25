@@ -32,8 +32,8 @@ input {
 
         // You can set the keyboard repeat parameters. The defaults match wlroots and sway.
         // Delay is in milliseconds before the repeat starts. Rate is in characters per second.
-        // repeat-delay 600
-        // repeat-rate 25
+        repeat-delay 600
+        repeat-rate 25
 
         // Niri can remember the keyboard layout globally (the default) or per-window.
         // - "global" - layout change is global for all windows.
@@ -45,7 +45,7 @@ input {
     // Omitting settings disables them, or leaves them at their default values.
     // All commented-out settings here are examples, not defaults.
     touchpad {
-        // tap  // tap-to-click
+        tap  // tap-to-click
         dwt // disable-when-typing.
         // dwtp // disable-when-trackpointing.
         natural-scroll // inverts the scrolling direction.
@@ -73,7 +73,7 @@ input {
 // https://yalter.github.io/niri/Configuration:-Layout
 layout {
     // Set gaps around windows in logical pixels.
-    gaps 8
+    gaps 4
 
     // When to center a column when changing focus, options are:
     // - "never", default behavior, focusing an off-screen column will keep at the left
@@ -118,7 +118,7 @@ layout {
         // off
 
         // How many logical pixels the ring extends out from the windows.
-        width 4
+        width 2
 
         // Colors can be set in a variety of ways:
         // - CSS named colors: "red"

@@ -24,13 +24,18 @@
       url = "git+ssh://git@github.com/TopazYC/secrets.git?shallow=1";
       flake = false;
     };
+    wallpapers = {
+      url = "git+ssh://git@github.com/TopazYC/wallpapers.git?shallow=1";
+      flake = false;
+    };
+
 
     noctalia = {
       url = "github:noctalia-dev/noctalia-shell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixos-wsl, home-manager, sops-nix, mysecrets, ... }@inputs :{
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixos-wsl, home-manager, sops-nix, mysecrets, wallpapers, noctalia, ... }@inputs :{
     nixosConfigurations.YC-NixOS = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [ 
@@ -52,7 +57,7 @@
 
       system = "x86_64-linux";
       specialArgs = {
-        inherit inputs nixpkgs-unstable sops-nix mysecrets;
+        inherit inputs nixpkgs-unstable sops-nix mysecrets wallpapers noctalia;
       };
       modules = [ 
         ./HyperV/configuration.nix 
@@ -66,7 +71,7 @@
           home-manager.useUserPackages = true;
           home-manager.users.Topaz = import ./HyperV/home.nix;
           home-manager.extraSpecialArgs = {
-             inherit  inputs;
+             inherit  inputs noctalia wallpapers;
           };
         }
       ];

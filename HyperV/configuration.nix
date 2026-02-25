@@ -10,6 +10,7 @@
 {
   imports = [
     ../os/desktop.nix
+    ../os/fonts.nix
   ];
 
   system.stateVersion = "25.11";
@@ -108,6 +109,7 @@ services.openssh = {
 
   programs.niri.enable = true;
   programs.hyprland.enable = true;
+  modules.desktop.fonts.enable = true;
 
   #modules.desktop.wayland.enable = true;
 

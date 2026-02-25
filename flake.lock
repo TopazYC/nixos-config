@@ -350,7 +350,8 @@
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "noctalia": "noctalia",
-        "sops-nix": "sops-nix"
+        "sops-nix": "sops-nix",
+        "wallpapers": "wallpapers"
       }
     },
     "sops-nix": {
@@ -386,6 +387,23 @@
         "owner": "nix-systems",
         "repo": "default",
         "type": "github"
+      }
+    },
+    "wallpapers": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1771862723,
+        "narHash": "sha256-2rVKIhqK2fj0uT6i/mQNiQUBq37eBbw9GF3npdrNaDQ=",
+        "ref": "refs/heads/main",
+        "rev": "ff72b9bfa8c3f85b2f77324d8316fa7f9632e597",
+        "shallow": true,
+        "type": "git",
+        "url": "ssh://git@github.com/TopazYC/wallpapers.git"
+      },
+      "original": {
+        "shallow": true,
+        "type": "git",
+        "url": "ssh://git@github.com/TopazYC/wallpapers.git"
       }
     }
   },
