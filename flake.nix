@@ -39,11 +39,11 @@
     nixosConfigurations.simple = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       specialArgs = {
-        inherit inputs nixpkgs-unstable;
+        inherit inputs;
       };
       modules = [ 
         ./simple/configuration.nix 
-        ./fisher/hardware-configuration.nix
+        ./simple/hardware-configuration.nix
       ];
     };
     nixosConfigurations.Fisher = nixpkgs.lib.nixosSystem {
