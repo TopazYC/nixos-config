@@ -36,6 +36,16 @@
     };
   };
   outputs = { self, nixpkgs, nixpkgs-unstable, nixos-wsl, home-manager, sops-nix, mysecrets, wallpapers, noctalia, ... }@inputs :{
+    nixosConfigurations.simple = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = {
+        inherit inputs nixpkgs-unstable;
+      };
+      modules = [ 
+        ./simple/configuration.nix 
+        ./fisher/hardware-configuration.nix
+      ];
+    };
     nixosConfigurations.Fisher = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       specialArgs = {
