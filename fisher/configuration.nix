@@ -70,7 +70,7 @@
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = with pkgs; [
-    git vim wget curl
+    git vim wget curl tree
     alacritty # Terminal Emulator
   ];
 
