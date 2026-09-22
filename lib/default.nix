@@ -1,5 +1,9 @@
 { lib, ... }:
 {
+  nixosSystem = import ./nixosSystem.nix;
+
+  attrs = import ./attrs.nix { inherit lib; };
+
   relativeToRoot = lib.path.append ../.;
   scanPaths = 
     path:
