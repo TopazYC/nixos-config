@@ -15,6 +15,10 @@
     ssh-to-age
   ];
 
+  programs.microsoft-edge = {
+    enable = true;
+  };
+
   modules.desktop.niri.enable = true;
 
   programs.git = {

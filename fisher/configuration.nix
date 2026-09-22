@@ -58,12 +58,12 @@
     packages = with pkgs; [ ];
     #hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
     # hashedPasswordFile = config.sops.secrets.host_user_password.path;
-    hashedPasswordFile = "/home/Topaz/nixos-config/secret/passwd.file";
+    hashedPasswordFile = "/etc/nixos/passwd.file";
   };
 
   users.users.root = {
     # hashedPasswordFile = config.sops.secrets.host_root_password.path;
-    hashedPasswordFile = "/home/Topaz/nixos-config/secret/passwd.file";
+    hashedPasswordFile = "/etc/nixos/passwd.file";
     #hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
   };
 
@@ -118,4 +118,16 @@ services.openssh = {
 
   #modules.desktop.wayland.enable = true;
 
+
+  programs.clash-verge = {
+    enable = true;
+    serviceMode = true;
+    autoStart = true;
+  };
+  networking.firewall = {
+    trustedInterfaces = [ "Mihomo" ];
+    extraReversePathFilterRules = ''
+      iifname { "Mihomo" } accept comment "trusted interface"
+    '';
+  };
 }
