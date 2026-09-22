@@ -36,7 +36,29 @@
     };
   };
   outputs = { self, nixpkgs, nixpkgs-unstable, nixos-wsl, home-manager, sops-nix, mysecrets, wallpapers, noctalia, ... }@inputs :{
-    nixosConfigurations.YC-NixOS = nixpkgs.lib.nixosSystem {
+    nixosConfigurations.Fisher = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = {
+        inherit inputs nixpkgs-unstable sops-nix mysecrets wallpapers noctalia;
+      };
+      modules = [ 
+        ./fisher/configuration.nix 
+        ./fisher/hardware-configuration.nix
+        ./secret
+
+        home-manager.nixosModules.home-manager
+
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.users.Topaz = import ./fisher/home.nix;
+          home-manager.extraSpecialArgs = {
+             inherit  inputs noctalia wallpapers;
+          };
+        }
+      ];
+    };
+    nixosConfigurations.WSL2-NixOS = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [ 
         nixos-wsl.nixosModules.wsl
