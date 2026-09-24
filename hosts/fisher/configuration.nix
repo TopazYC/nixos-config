@@ -56,6 +56,8 @@
     hashedPasswordFile = "/etc/nixos/passwd.file";
   };
   services.fprintd.enable = true;
+  services.fprintd.tod.enable = true;
+services.fprintd.tod.driver = pkgs.libfprint-2-tod1-elan;
 
   users.users.root = {
     # hashedPasswordFile = config.sops.secrets.host_root_password.path;
