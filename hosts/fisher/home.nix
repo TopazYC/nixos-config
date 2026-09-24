@@ -5,8 +5,8 @@
   home.homeDirectory = "/home/Topaz";
 
   imports = [
-    ../home/niri
-    ../home/noctalia
+#    ../home/niri
+#    ../home/noctalia
   ];
 
   home.stateVersion = "25.11";
