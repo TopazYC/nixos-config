@@ -39,26 +39,26 @@ in
   programs.ssh = {
     enable = true;
     enableDefaultConfig = false;
-    matchBlocks = {
+    settings={
       "*" = {
-        forwardAgent = false;
-        serverAliveInterval = 0;
-        serverAliveCountMax = 3;
-        compression = false;
-        addKeysToAgent = "yes";
-        hashKnownHosts = false;
-        userKnownHostsFile = "~/.ssh/known_hosts";
-        controlMaster = "auto";
-        controlPath = "~/.ssh/master-%r@%h:%p";
+        AddKeysToAgent = "yes";
+        ControlMaster = "auto";
+        ControlPath = "~/.ssh/master-%r@%h:%p";
+        Compression = false;
+        ControlPersist="yes";
+        ForwardAgent = false;
+        HashKnownHosts = false;
+        ServerAliveInterval = 0;
+        ServerAliveCountMax = 3;
+        UserKnownHostsFile = "~/.ssh/known_hosts";
      };
       "github.com" = {
-        hostname = "github.com";
-        user = "git";
-        identityFile = "~/.ssh/github_id";
-        identitiesOnly = true;
-        extraOptions = {
+        Hostname = "github.com";
+        User = "git";
+        IdentityFile = "~/.ssh/github_id";
+        IdentitiesOnly = true;
           StrictHostKeyChecking = "accept-new";
-        };
+        #extraOptions = { };
       };
     };
   };
