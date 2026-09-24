@@ -51,6 +51,15 @@ in
         controlMaster = "auto";
         controlPath = "~/.ssh/master-%r@%h:%p";
      };
+      "github.com" = {
+        hostname = "github.com";
+        user = "git";
+        identityFile = "~/.ssh/github_id";
+        identitiesOnly = true;
+        extraOptions = {
+          StrictHostKeyChecking = "accept-new";
+        };
+      };
     };
   };
 }
