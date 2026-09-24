@@ -47,7 +47,7 @@
   users.users.Topaz = {
     isNormalUser = true;
     description = "Topaz";
-    extraGroups = ["networkmanager" "wheel" "audio"];
+    extraGroups = ["networkmanager" "wheel" "audio" "input"];
     uid = 1000;
 
     packages = with pkgs; [ ];
@@ -55,6 +55,7 @@
     # hashedPasswordFile = config.sops.secrets.host_user_password.path;
     hashedPasswordFile = "/etc/nixos/passwd.file";
   };
+  services.fprintd.enable = true;
 
   users.users.root = {
     # hashedPasswordFile = config.sops.secrets.host_root_password.path;
