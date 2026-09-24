@@ -7,7 +7,7 @@
 }:
 #############################################################
 #
-#  Ai - my main computer, with NixOS + I5-13600KF + RTX 4090 GPU, for gaming & daily use.
+#  - Fisher, my main computer (laptop), with NixOS + R5800H, for gaming & daily use.
 #
 #############################################################
 let

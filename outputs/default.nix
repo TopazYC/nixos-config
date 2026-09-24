@@ -140,6 +140,9 @@ in
     map (it: it.nixosConfigurations or { }) nixosSystemValues
   );
 
+  # Packages
+  packages = forAllSystems (system: allSystems.${system}.packages or { });
+
   # Colmena - remote deployment via SSH
 #  colmena = {
 #    meta =
@@ -170,8 +173,6 @@ in
 #    map (it: it.darwinConfigurations or { }) darwinSystemValues
 #  );
 
-  # Packages
-  packages = forAllSystems (system: allSystems.${system}.packages or { });
 
 #  # Eval Tests for all NixOS & darwin systems.
 #  evalTests = lib.lists.all (it: it.evalTests == { }) allSystemValues;

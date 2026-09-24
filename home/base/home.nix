@@ -14,5 +14,7 @@
     # the Home Manager release notes for a list of state version
     # changes in each release.
     stateVersion = "24.11";
+
   };
+  programs.bash.enable = true;
 }

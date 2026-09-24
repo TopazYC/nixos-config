@@ -31,6 +31,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # https://github.com/catppuccin/nix
+    catppuccin = {
+      url = "github:catppuccin/nix/v26.05";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     mysecrets = {
       url = "git+ssh://git@github.com/TopazYC/secrets.git?shallow=1";
       flake = false;
@@ -47,6 +53,8 @@
     };
   };
   outputs = inputs: import ./outputs inputs;
+
+
 #  outputs = { self, nixpkgs, nixpkgs-unstable, nixos-wsl, home-manager, sops-nix, mysecrets, wallpapers, noctalia, ... }@inputs :{
 #    nixosConfigurations.simple = nixpkgs.lib.nixosSystem {
 #      system = "x86_64-linux";

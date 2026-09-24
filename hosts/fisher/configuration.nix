@@ -73,6 +73,7 @@
   environment.systemPackages = with pkgs; [
     git vim wget curl tree
     alacritty # Terminal Emulator
+    microsoft-edge
   ];
 
   services.pulseaudio.enable = false;

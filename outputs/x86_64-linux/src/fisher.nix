@@ -19,6 +19,7 @@ let
         # common
         # "secrets/nixos.nix"
         # "modules/nixos/desktop.nix"
+
         # host specific
         "hosts/${name}"
         # nixos hardening
