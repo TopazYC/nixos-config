@@ -37,6 +37,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+# -------------- Gaming --------------------- #
+
+    nix-gaming = {
+      url = "github:fufexan/nix-gaming";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     mysecrets = {
       url = "git+ssh://git@github.com/TopazYC/secrets.git?shallow=1";
       flake = false;

@@ -61,7 +61,12 @@
       options = [ "subvol=@home" ];
     };
 
-  swapDevices = [ ];
+  swapDevices = [ 
+    {
+      device = "/swap/swapfile";
+      size = 10240;
+    }
+  ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;

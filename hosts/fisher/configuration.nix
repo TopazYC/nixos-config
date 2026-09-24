@@ -70,17 +70,6 @@
     microsoft-edge
   ];
 
-  services.pulseaudio.enable = false;
-  # hardware.pulseaudio.enable = false; (deprecated)
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-    jack.enable = true;
-  };
-
-
 services.openssh = {
   enable = true;
   settings = {
