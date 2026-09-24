@@ -8,12 +8,6 @@
 { config, lib,mylib, pkgs, nixpkgs-unstable, inputs, sops-nix, ... }:
 
 {
-  imports =
-  ( map mylib.relativeToRoot [
-    "os/desktop.nix"
-    "os/fonts.nix"
-  ]);
-
   system.stateVersion = "25.11";
   networking.hostName = "Fisher"; 
 
