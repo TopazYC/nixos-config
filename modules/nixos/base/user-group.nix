@@ -1,0 +1,51 @@
+{
+  myvars,
+  config,
+  ...
+}:
+{
+  # Don't allow mutation of users outside the config.
+  users.mutableUsers = false;
+
+  users.groups = {
+    "${myvars.username}" = { };
+    podman = { };
+    docker = { };
+    wireshark = { };
+    # for android platform tools's udev rules
+    adbusers = { };
+    dialout = { };
+    # for openocd (embedded system development)
+    plugdev = { };
+    # misc
+    uinput = { };
+    # shared group for services that read/write the same data directory
+    # (e.g. sftpgo + transmission on aquamarine)
+    fileshare = { };
+  };
+
+  users.users."${myvars.username}" = {
+    # we have to use initialHashedPassword here when using tmpfs for /
+    # inherit (myvars) initialHashedPassword;
+    hashedPassword = myvars.hashedPassword;
+    home = "/home/${myvars.username}";
+    isNormalUser = true;
+    extraGroups = [
+      myvars.username
+      "users"
+      "wheel"
+      "networkmanager" # for nmtui / nmcli
+      "wireshark"
+      "adbusers" # android debugging
+      "libvirtd" # virt-viewer / qemu
+      "fileshare"
+    ];
+  };
+
+# TODO: fix the SSH config later.
+  # root's ssh key are mainly used for remote deployment
+  users.users.root = {
+    hashedPassword = myvars.hashedPassword;
+#    openssh.authorizedKeys.keys = myvars.mainSshAuthorizedKeys ++ myvars.secondaryAuthorizedKeys;
+  };
+}

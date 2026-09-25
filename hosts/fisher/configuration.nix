@@ -41,29 +41,29 @@
 
   
   # set the default editor to be vim
-  environment.variables.EDITOR = "vim";
+  # environment.variables.EDITOR = "vim";
 
-  users.mutableUsers = false;
-  users.users.Topaz = {
-    isNormalUser = true;
-    description = "Topaz";
-    extraGroups = ["networkmanager" "wheel" "audio" "input"];
-    uid = 1000;
-
-    packages = with pkgs; [ ];
-    #hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
-    # hashedPasswordFile = config.sops.secrets.host_user_password.path;
-    hashedPasswordFile = "/etc/nixos/passwd.file";
-  };
+#  users.mutableUsers = false;
+#  users.users.Topaz = {
+#    isNormalUser = true;
+#    description = "Topaz";
+#    extraGroups = ["networkmanager" "wheel" "audio" "input"];
+#    uid = 1000;
+#
+#    packages = with pkgs; [ ];
+#    #hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
+#    # hashedPasswordFile = config.sops.secrets.host_user_password.path;
+#    hashedPasswordFile = "/etc/nixos/passwd.file";
+#  };
   services.fprintd.enable = true;
   services.fprintd.tod.enable = true;
 services.fprintd.tod.driver = pkgs.libfprint-2-tod1-elan;
 
-  users.users.root = {
-    # hashedPasswordFile = config.sops.secrets.host_root_password.path;
-    hashedPasswordFile = "/etc/nixos/passwd.file";
-    #hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
-  };
+#  users.users.root = {
+#    # hashedPasswordFile = config.sops.secrets.host_root_password.path;
+#    hashedPasswordFile = "/etc/nixos/passwd.file";
+#    #hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
+#  };
 
   nixpkgs.config.allowUnfree = true;
 
