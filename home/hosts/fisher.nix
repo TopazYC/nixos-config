@@ -36,30 +36,30 @@ in
     };
     
   };
-  programs.ssh = {
-    enable = true;
-    enableDefaultConfig = false;
-    settings={
-      "*" = {
-        AddKeysToAgent = "yes";
-        ControlMaster = "auto";
-        ControlPath = "~/.ssh/master-%r@%h:%p";
-        Compression = false;
-        ControlPersist="yes";
-        ForwardAgent = false;
-        HashKnownHosts = false;
-        ServerAliveInterval = 0;
-        ServerAliveCountMax = 3;
-        UserKnownHostsFile = "~/.ssh/known_hosts";
-     };
-      "github.com" = {
-        Hostname = "github.com";
-        User = "git";
-        IdentityFile = "~/.ssh/github_id";
-        IdentitiesOnly = true;
-          StrictHostKeyChecking = "accept-new";
-        #extraOptions = { };
-      };
-    };
-  };
+ # programs.ssh = {
+ #   enable = true;
+ #   enableDefaultConfig = false;
+ #   settings={
+ #     "*" = {
+ #       AddKeysToAgent = "yes";
+ #       ControlMaster = "auto";
+ #       ControlPath = "~/.ssh/master-%r@%h:%p";
+ #       Compression = false;
+ #       ControlPersist="yes";
+ #       ForwardAgent = false;
+ #       HashKnownHosts = false;
+ #       ServerAliveInterval = 0;
+ #       ServerAliveCountMax = 3;
+ #       UserKnownHostsFile = "~/.ssh/known_hosts";
+ #    };
+ #     "github.com" = {
+ #       Hostname = "github.com";
+ #       User = "git";
+ #       IdentityFile = "~/.ssh/github_id";
+ #       IdentitiesOnly = true;
+ #         StrictHostKeyChecking = "accept-new";
+ #       #extraOptions = { };
+ #     };
+ #   };
+  #};
 }
