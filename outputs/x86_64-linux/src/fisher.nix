@@ -24,8 +24,8 @@ let
         "hosts/${name}"
         # nixos hardening
         # "hardening/profiles/default.nix"
-        # "hardening/nixpaks"
-        # "hardening/bwraps"
+        "hardening/nixpaks"
+        "hardening/bwraps"
       ])
       ++ [
         {

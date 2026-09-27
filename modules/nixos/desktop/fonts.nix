@@ -56,28 +56,12 @@
     # including full unicode support, and when the video card supports drm should be much faster.
 
 #  the following configuration only supported in master branch.
-#    enable = true;
-#    extraOptions = "--term xterm-256color";
-#    config = {
-#      font-name = "Maple Mono NF CN";
-#      font-size = 14;
-#      hwaccel = true;
-#    };
-
     enable = true;
-    fonts = with pkgs; [
-      {
-        name = "Maple Mono NF CN";
-        package = maple-mono.NF-CN-unhinted;
-      }
-      {
-        name = "JetBrainsMono Nerd Font";
-        package = nerd-fonts.jetbrains-mono;
-      }
-    ];
     extraOptions = "--term xterm-256color";
-    extraConfig = "font-size=14";
-    # Whether to use 3D hardware acceleration to render the console.
-    hwRender = true;
+    config = {
+      font-name = "Maple Mono NF CN";
+      font-size = 14;
+      hwaccel = true;
+    };
   };
 }

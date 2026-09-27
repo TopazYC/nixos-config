@@ -5,7 +5,7 @@
   ...
 }:
 let
-  agentPackages = llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
+  # agentPackages = llm-agents.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
   home.packages =

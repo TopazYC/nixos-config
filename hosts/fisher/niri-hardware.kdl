@@ -1,0 +1,40 @@
+// Outputs are matched by monitor manufacturer/model/serial instead of the
+// connector name: the kernel/NVIDIA driver decides DRM connector numbering by
+// probe order, so Intel's connectors were renamed DP-1 -> DP-4 and
+// HDMI-A-2 -> HDMI-A-3 on the 2026-09 nixpkgs update. Run `niri msg outputs`
+// to read the exact "make model serial" string.
+//debug {
+    // Keep desktop rendering and ordinary applications on the Intel iGPU.
+    // Physical outputs remain on the NVIDIA GPU and use cross-GPU scanout.
+//    render-drm-device "/dev/dri/by-path/pci-0000:00:02.0-render"
+//}
+
+output "Lenovo Group Limited 0x89B5 Unknown" {
+    scale 1.5
+    mode "2240x1400@60.001"
+    position x=0 y=0
+}
+
+output "Xiaomi Corporation Redmi 238 NFS 4067933233702" {
+    scale 1.0
+    mode "1920x1080@60.000"
+    position x=1493 y=0
+}
+
+workspace "1terminal" { open-on-output "Xiaomi Corporation Redmi 238 NFS 4067933233702"; }
+workspace "2browser" { open-on-output "Xiaomi Corporation Redmi 238 NFS 4067933233702"; }
+workspace "3chat" { open-on-output "Xiaomi Corporation Redmi 238 NFS 4067933233702"; }
+workspace "4entertainment" { open-on-output "Xiaomi Corporation Redmi 238 NFS 4067933233702"; }
+workspace "5utility" { open-on-output "Xiaomi Corporation Redmi 238 NFS 4067933233702"; }
+workspace "0other" { open-on-output "Xiaomi Corporation Redmi 238 NFS 4067933233702"; }
+
+
+// output "Virtual-1" {
+    // Created by vkms in hardware-intel.nix. Sunshine captures this output when
+    // the NVIDIA-attached physical monitors are off. It remains available in
+    // normal physical sessions, with minor idle GPU and framebuffer overhead.
+//    scale 1.5
+//    transform "normal"
+//    mode "2560x1600"
+//    position x=0 y=0
+//}

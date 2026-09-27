@@ -1,11 +1,11 @@
 {
   description = "Topaz's NixOS Configuration";
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
-    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-26.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
     nixos-wsl.url = "github:nix-community/nixos-wsl/release-25.05";
-    home-manager.url = "github:nix-community/home-manager/release-26.05";
+    home-manager.url = "github:nix-community/home-manager/master";
     home-manager-wsl.url = "github:nix-community/home-manager/release-25.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     agenix.url = "github:ryantm/agenix";
@@ -15,7 +15,7 @@
 
     # Extras (imported directly by modules/hosts that need them)
     dms.url = "github:AvengeMedia/DankMaterialShell";
-    dms.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    dms.inputs.nixpkgs.follows = "nixpkgs";
     emacs-overlay.url = "github:nix-community/emacs-overlay";
     emacs-overlay.inputs.nixpkgs.follows = "nixpkgs";
     nixos-hardware.url = "github:nixos/nixos-hardware";
@@ -31,9 +31,19 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nixpak = {
+      url = "github:nixpak/nixpak";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # https://github.com/catppuccin/nix
     catppuccin = {
       url = "github:catppuccin/nix/v26.05";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # Wayland <-> X11 clipboard sync daemon for xwayland-satellite (niri)
+    pyclipsync = {
+      url = "github:ryan4yin/pyclipsync/v0.1.3";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
