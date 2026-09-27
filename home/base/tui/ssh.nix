@@ -29,7 +29,7 @@
         # avoid clash fake-IP6 hang, see modules/nixos/desktop/networking/clash-verge.nix
         AddressFamily = "inet";
         HostName = "github.com";
-        Port = 443;
+        Port = 22;
         User = "git";
 	IdentityFile = "~/.ssh/github_id";
         IdentitiesOnly = true;

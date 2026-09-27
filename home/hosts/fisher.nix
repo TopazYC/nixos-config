@@ -18,15 +18,15 @@ in
     enable = true;
   };
 
-  modules.desktop.gaming.enable = true;
+  #modules.desktop.gaming.enable = true;
   modules.desktop.niri.enable = true;
 
   # PC: keep the screen on longer than on the laptop.
-  modules.desktop.hypridle = {
-    keyboardBacklightTimeout = 900;
-    screenOffTimeout = 1200;
-    lockTimeout = 1800;
-  };
+#  modules.desktop.hypridle = {
+#    keyboardBacklightTimeout = 900;
+#    screenOffTimeout = 1200;
+#    lockTimeout = 1800;
+#  };
 
   xdg.configFile."niri/niri-hardware.kdl".source =
     mkSymlink "${config.home.homeDirectory}/nixos-config/hosts/fisher/niri-hardware.kdl";
