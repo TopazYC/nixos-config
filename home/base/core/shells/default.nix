@@ -25,9 +25,9 @@ in
   home.shellAliases = shellAliases;
 
   # NOTE: nushell will be launched in bash, so it can inherit all the eenvironment variables.
-#  programs.nushell = {
-#    enable = true;
-#    configFile.source = ./config.nu;
-#    inherit shellAliases;
-#  };
+  programs.nushell = {
+    enable = true;
+    configFile.source = ./config.nu;
+    inherit shellAliases;
+  };
 }

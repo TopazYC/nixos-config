@@ -2,6 +2,7 @@
   pkgs,
   config,
   lib,
+  mylib,
   ...
 }:
 let
@@ -14,7 +15,7 @@ in
 
   config.fonts.packages =
     with pkgs;
-    lib.mkIf cfg.fonts.enable [
+    lib.optionals cfg.fonts.enable [
       # icon fonts
       material-design-icons
       font-awesome
@@ -54,5 +55,25 @@ in
       # Full version, embed with nerdfonts icons, Chinese and Japanese glyphs
       # https://github.com/subframe7536/maple-font
       maple-mono.NF-CN-unhinted
-    ];
+    ]
+    ++  lib.optionals config.modules.editors.emacs.enable [
+      # Emacs Default Required
+      symbola
+      # I like
+      cascadia-code ]
+    ++  lib.optionals config.modules.editors.emacs.enable [
+      # palatino, tex(mathpazo)
+      (
+        pkgs.stdenvNoCC.mkDerivation{
+	pname="palatino-nova";
+	version = "1.0";
+	src = mylib.relativeToRoot "assets/fonts/palatino-nova";
+	installPhase = "
+	  mkdir -p $out/share/fonts/truetype
+	  cp *.ttf $out/share/fonts/truetype/
+	";
+	}
+      )
+    ]
+    ;
 }
