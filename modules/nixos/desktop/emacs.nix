@@ -1,0 +1,83 @@
+# Emacs is my main driver. I'm the author of Doom Emacs
+# https://github.com/doomemacs. This module sets it up to meet my particular
+# Doomy needs.
+
+{ lib, config, pkgs,
+  emacs-overlay,
+  myvars,
+... }:
+
+with lib;
+let cfg = config.modules.editors.emacs;
+    emacs = with pkgs; (emacsPackagesFor emacs-git-pgtk).emacsWithPackages
+      (epkgs: with epkgs; [
+        vterm
+      ]);
+in {
+  options.modules.editors.emacs = {
+    enable = mkEnableOption "emacs";
+  };
+
+  config = mkIf cfg.enable {
+    nixpkgs.overlays = [
+      emacs-overlay.overlays.default
+    ];
+
+    users.users."${myvars.username}".packages = with pkgs; [
+     # (mkLauncherEntry "Emacs (Debug Mode)" {
+     #   description = "Start Emacs in debug mode";
+     #   icon = "emacs";
+     #   exec = "${emacs}/bin/emacs --debug-init";
+     # })
+
+      ## Emacs itself
+      binutils            # native-comp needs 'as', provided by this
+      emacs               # HEAD + native-comp
+
+      ## Doom dependencies
+      git
+      ripgrep
+      gnutls              # for TLS connectivity
+
+      ## Optional dependencies
+      fd                  # faster projectile indexing
+      imagemagick         # for image-dired
+      (mkIf (config.programs.gnupg.agent.enable)
+        pinentry-emacs)   # in-emacs gnupg prompts
+      zstd                # for undo-fu-session/undo-tree compression
+
+      ## Module dependencies
+      # :checkers spell
+      (aspellWithDicts (ds: with ds; [ en en-computers en-science ]))
+      # :emacs dired +dirvish
+      ffmpegthumbnailer
+      mediainfo
+      vips
+      # :tools editorconfig
+      editorconfig-core-c # per-project style config
+      # :tools lookup & :lang org +roam
+      sqlite
+      # :tools pdf (for building pdf-tools)
+      automake
+      autoconf
+      pkg-config
+      libpng
+      zlib
+      poppler
+      # :lang cc
+      clang-tools
+      # :lang latex & :lang org (latex previews)
+      texliveMedium
+      # :lang nix
+      age
+      # :lang python
+      ty
+    ];
+
+    environment.variables.PATH = [ "$XDG_CONFIG_HOME/emacs/bin" ];
+
+    #modules.shell.zsh.rcFiles = [ "${hey.configDir}/emacs/aliases.zsh" ];
+
+    fonts.packages = [ pkgs.nerd-fonts.symbols-only ];
+  };
+}

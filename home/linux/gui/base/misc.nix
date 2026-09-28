@@ -13,8 +13,10 @@
     remmina
     freerdp # required by remmina
 
+
+    netease-cloud-music-gtk
     # my custom hardened packages
-    # nixpaks.qq
+    nixpaks.qq
     # nixpaks.telegram-desktop
     # qqmusic
     bwraps.wechat

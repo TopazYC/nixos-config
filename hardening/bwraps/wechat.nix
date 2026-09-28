@@ -1,5 +1,4 @@
-# - wechat's flatpak manifest: https://github.com/flathub/com.tencent.WeChat/blob/master/com.tencent.WeChat.yaml
-# Refer:
+# - wechat's flatpak manifest: https://github.com/flathub/com.tencent.WeChat/blob/master/com.tencent.WeChat.yaml Refer:
 # - Flatpak manifest's docs:
 #   - https://docs.flatpak.org/en/latest/manifests.html
 #   - https://docs.flatpak.org/en/latest/sandbox-permissions.html
@@ -96,7 +95,7 @@ appimageTools.wrapAppImage {
   ];
   chdirToPwd = false;
   unshareNet = false;
-  unshareIpc = true;
+  unshareIpc = false;
   unsharePid = true;
   unshareUts = true;
   unshareCgroup = true;
