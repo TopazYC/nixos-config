@@ -1,4 +1,5 @@
-{ pkgs-master, ... }:
+{  pkgs,
+pkgs-master, ... }:
 # NOTE: There is a known pitfall with mihomo's fake-IP for IPv6
 # (fake-ip-range6: fdfe:dcba:9876::/64): TCP connections to IPv6 fake-IPs are
 # not proxied correctly and simply hang until connect() times out.
@@ -15,7 +16,7 @@
 {
   programs.clash-verge = {
     enable = true;
-    package = pkgs-master.clash-verge-rev;
+    package = pkgs.clash-verge-rev;
     autoStart = true;
     serviceMode = true;
     tunMode = true;

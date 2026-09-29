@@ -39,7 +39,7 @@
     # EasyEffects follows the system default output device by default
     # (`useDefaultOutputDevice`), so no GUI state needs to be persisted.
     easyeffects = {
-      enable = true;
+      enable = false;
 
       extraPresets.loudness-normalization.output = {
         blocklist = [ ];

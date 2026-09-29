@@ -109,16 +109,10 @@ services.openssh = {
 
   #modules.desktop.wayland.enable = true;
 
-
-  programs.clash-verge = {
-    enable = true;
-    serviceMode = true;
-    autoStart = true;
-  };
-  networking.firewall = {
-    trustedInterfaces = [ "Mihomo" ];
-    extraReversePathFilterRules = ''
-      iifname { "Mihomo" } accept comment "trusted interface"
-    '';
-  };
+##  networking.firewall = {
+##    trustedInterfaces = [ "Mihomo" ];
+##    extraReversePathFilterRules = ''
+##      iifname { "Mihomo" } accept comment "trusted interface"
+##    '';
+##  };
 }
