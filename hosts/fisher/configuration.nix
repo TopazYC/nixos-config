@@ -55,9 +55,13 @@
 #    # hashedPasswordFile = config.sops.secrets.host_user_password.path;
 #    hashedPasswordFile = "/etc/nixos/passwd.file";
 #  };
-  services.fprintd.enable = true;
-  services.fprintd.tod.enable = true;
-services.fprintd.tod.driver = pkgs.libfprint-2-tod1-elan;
+##   services.fprintd.enable = true;
+##   services.fprintd.tod.enable = true;
+## services.fprintd.tod.driver = pkgs.libfprint-2-tod1-elan;
+environment.sessionVariables = {
+  GTK_IM_MODULE = null;
+  QT_IM_MODULE = null;
+};
 
 #  users.users.root = {
 #    # hashedPasswordFile = config.sops.secrets.host_root_password.path;
@@ -98,7 +102,7 @@ services.openssh = {
   };
 
   services.displayManager.gdm.enable = true;
-  services.desktopManager.gnome.enable = true;
+  # services.desktopManager.gnome.enable = true;
 
   # programs.hyprland.enable = true;
   modules.desktop.fonts.enable = true;

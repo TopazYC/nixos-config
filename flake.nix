@@ -48,6 +48,15 @@
     };
 
 # -------------- Gaming --------------------- #
+    fcitx5-theme-mint = {
+    url = "github:witt-bit/fcitx5-theme-mint";
+    flake = false;
+  };
+
+    catppuccin-fcitx5 = {
+    url = "github:catppuccin/fcitx5";
+    flake = false;
+  };
 
     nix-gaming = {
       url = "github:fufexan/nix-gaming";
@@ -62,7 +71,6 @@
       url = "git+ssh://git@github.com/TopazYC/wallpapers.git?shallow=1";
       flake = false;
     };
-
 
     noctalia = {
       url = "github:noctalia-dev/noctalia-shell";
