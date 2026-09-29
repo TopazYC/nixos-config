@@ -30,5 +30,5 @@
     pkgs.gpu-screen-recorder # recoding screen
   ]);
 
-  #home.file."Pictures/Wallpapers".source = wallpapers;
+  home.file."Pictures/Wallpapers".source = wallpapers;
 }
