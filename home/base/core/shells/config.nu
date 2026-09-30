@@ -104,7 +104,7 @@ $env.config.edit_mode = "vi"
 # Command that will be used to edit the current line buffer with Ctrl+O.
 # If unset, uses $env.VISUAL and then $env.EDITOR ($EDITOR is `hx` via session-env).
 #
-$env.config.buffer_editor = ["nvim"]
+$env.config.buffer_editor = ["emacsclient" "-t"]
 
 # cursor_shape_* (string)
 # -----------------------

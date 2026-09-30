@@ -8,7 +8,6 @@
   # ppdSupport = true; # translation of power-profiles-daemon API calls to TuneD
   # ppdSettings.main.default = "balanced"; # balanced / performance / power-saver
   # };
-
   services.tlp = {
     enable = true;
     pd.enable = true;
