@@ -24,6 +24,8 @@ in
         "nushell/modules".source = mkSource "modules";
       };
     programs.nushell = {
+      # Here we must use extraConfig.
+      # The origin nushell config.nu is set in the home/base/core/shells
       extraConfig = ''
         use ./modules.nu *
       '';
