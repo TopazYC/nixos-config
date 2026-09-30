@@ -1,0 +1,7 @@
+{...}:
+{
+  programs.nushell = {
+    extraConfig = ''
+    '';
+  };
+}

@@ -65,6 +65,7 @@
         main = {
           # overloads the capslock key to function as both escape (when tapped) and control (when held)
           capslock = "overload(control, esc)";
+          tab = "overload(meta, tab)";
           # esc = "capslock";
         };
       };

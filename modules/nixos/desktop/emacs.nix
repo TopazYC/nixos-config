@@ -9,7 +9,7 @@
 
 with lib;
 let cfg = config.modules.editors.emacs;
-    emacs = with pkgs; (emacsPackagesFor emacs-git-pgtk).emacsWithPackages
+    emacs = with pkgs; (emacsPackagesFor emacs31-pgtk).emacsWithPackages
       (epkgs: with epkgs; [
         vterm
       ]);

@@ -22,6 +22,9 @@
     # supported languages: only some mainstream languages currently(do not support nix/nginx/yaml/toml/...)
     ast-grep
 
+    # need in Doom Emacs
+    shellcheck
+
     # other core cli tools are installed at system-level
   ];
 

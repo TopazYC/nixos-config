@@ -11,6 +11,13 @@ window-rule {
     // no compositor-side blur needed
 }
 window-rule {
+    match app-id="emacs"
+    open-on-workspace "1terminal"
+    open-maximized true
+    // foot >= 1.26 uses native blur via ext-background-effect,
+    // no compositor-side blur needed
+}
+window-rule {
     match app-id="Alacritty"
     open-on-workspace "1terminal"
     open-maximized true
