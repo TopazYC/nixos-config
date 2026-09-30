@@ -14,7 +14,8 @@
     freerdp # required by remmina
 
 
-    netease-cloud-music-gtk
+    ##netease-cloud-music-gtk
+    go-musicfox
     # my custom hardened packages
     nixpaks.qq
     # nixpaks.telegram-desktop
