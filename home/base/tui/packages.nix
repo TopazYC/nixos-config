@@ -10,12 +10,12 @@
       # -*- Data & Configuration Languages -*-#
       [
         #-- nix
-#        nil
-#        nixd
-#        statix # Lints and suggestions for the nix programming language
-#        deadnix # Find and remove unused code in .nix source files
-#        nixfmt # Nix Code Formatter
-#
+        nil
+        nixd
+        statix # Lints and suggestions for the nix programming language
+        deadnix # Find and remove unused code in .nix source files
+        nixfmt # Nix Code Formatter
+
 #        #-- json like
 #        terraform-ls
 #        jsonnet
