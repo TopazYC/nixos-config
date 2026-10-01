@@ -18,7 +18,7 @@ binds {
     Mod+Shift+Return { spawn "alacritty"; }
 
     // Launcher
-    Mod+D { spawn "noctalia" "msg" "panel-toggle" "launcher"; }
+    // Mod+D { spawn "noctalia" "msg" "panel-toggle" "launcher"; }
     Mod+Space { spawn "noctalia" "msg" "panel-toggle" "launcher"; }
     XF86Search { spawn "noctalia" "msg" "panel-toggle" "launcher"; }
 
@@ -253,4 +253,11 @@ binds {
 
     Mod+S { spawn "noctalia" "msg" "panel-toggle" "control-center"; }
     Mod+E { spawn "noctalia" "msg" "panel-toggle" "session"; }
+}
+
+recent-windows {
+    binds {
+        Mod+D {next-window;}
+        Mod+Shift+D {previous-window;}
+    }
 }

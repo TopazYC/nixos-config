@@ -19,7 +19,7 @@
     emacs-overlay.url = "github:nix-community/emacs-overlay";
     emacs-overlay.inputs.nixpkgs.follows = "nixpkgs";
     nixos-hardware.url = "github:nixos/nixos-hardware";
-  
+
     # add git hooks to format nix code before commit
     pre-commit-hooks = {
       url = "github:cachix/git-hooks.nix";
@@ -47,20 +47,24 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-# -------------- Gaming --------------------- #
+    # -------------- Gaming --------------------- #
     fcitx5-theme-mint = {
-    url = "github:witt-bit/fcitx5-theme-mint";
-    flake = false;
-  };
+      url = "github:witt-bit/fcitx5-theme-mint";
+      flake = false;
+    };
 
     catppuccin-fcitx5 = {
-    url = "github:catppuccin/fcitx5";
-    flake = false;
-  };
+      url = "github:catppuccin/fcitx5";
+      flake = false;
+    };
 
     nix-gaming = {
       url = "github:fufexan/nix-gaming";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    llm-agents = {
+      url = "github:numtide/llm-agents.nix";
     };
 
     mysecrets = {
@@ -79,79 +83,78 @@
   };
   outputs = inputs: import ./outputs inputs;
 
-
-#  outputs = { self, nixpkgs, nixpkgs-unstable, nixos-wsl, home-manager, sops-nix, mysecrets, wallpapers, noctalia, ... }@inputs :{
-#    nixosConfigurations.simple = nixpkgs.lib.nixosSystem {
-#      system = "x86_64-linux";
-#      specialArgs = {
-#        inherit inputs;
-#      };
-#      modules = [ 
-#        ./simple/configuration.nix 
-#        ./simple/hardware-configuration.nix
-#      ];
-#    };
-#    nixosConfigurations.Fisher = nixpkgs.lib.nixosSystem {
-#      system = "x86_64-linux";
-#      specialArgs = {
-#        inherit inputs nixpkgs-unstable sops-nix mysecrets wallpapers noctalia;
-#      };
-#      modules = [ 
-#        ./fisher/configuration.nix 
-#        ./fisher/hardware-configuration.nix
-#        ./secret
-#
-#        home-manager.nixosModules.home-manager
-#
-#        {
-#          home-manager.useGlobalPkgs = true;
-#          home-manager.useUserPackages = true;
-#          home-manager.users.Topaz = import ./fisher/home.nix;
-#          home-manager.extraSpecialArgs = {
-#             inherit  inputs noctalia wallpapers;
-#          };
-#        }
-#      ];
-#    };
-#    nixosConfigurations.WSL2-NixOS = nixpkgs.lib.nixosSystem {
-#      system = "x86_64-linux";
-#      modules = [ 
-#        nixos-wsl.nixosModules.wsl
-#        ./WSL/configuration.nix 
-#
-#        home-manager.nixosModules.home-manager
-#
-#        {
-#          home-manager.useGlobalPkgs = true;
-#          home-manager.useUserPackages = true;
-#          home-manager.users.Topaz = import ./WSL/home.nix;
-#          # home-manager.extraSpecialArgs = inputs;
-#        }
-#      ];
-#    };
-#
-#    nixosConfigurations.HyperV = nixpkgs.lib.nixosSystem {
-#
-#      system = "x86_64-linux";
-#      specialArgs = {
-#        inherit inputs nixpkgs-unstable sops-nix mysecrets wallpapers noctalia;
-#      };
-#      modules = [ 
-#        ./HyperV/configuration.nix 
-#        ./HyperV/hardware-configuration.nix
-#        ./secret
-#
-#        home-manager.nixosModules.home-manager
-#
-#        {
-#          home-manager.useGlobalPkgs = true;
-#          home-manager.useUserPackages = true;
-#          home-manager.users.Topaz = import ./HyperV/home.nix;
-#          home-manager.extraSpecialArgs = {
-#             inherit  inputs noctalia wallpapers;
-#          };
-#        }
-#      ];
-#    };
-#  };
+  #  outputs = { self, nixpkgs, nixpkgs-unstable, nixos-wsl, home-manager, sops-nix, mysecrets, wallpapers, noctalia, ... }@inputs :{
+  #    nixosConfigurations.simple = nixpkgs.lib.nixosSystem {
+  #      system = "x86_64-linux";
+  #      specialArgs = {
+  #        inherit inputs;
+  #      };
+  #      modules = [
+  #        ./simple/configuration.nix
+  #        ./simple/hardware-configuration.nix
+  #      ];
+  #    };
+  #    nixosConfigurations.Fisher = nixpkgs.lib.nixosSystem {
+  #      system = "x86_64-linux";
+  #      specialArgs = {
+  #        inherit inputs nixpkgs-unstable sops-nix mysecrets wallpapers noctalia;
+  #      };
+  #      modules = [
+  #        ./fisher/configuration.nix
+  #        ./fisher/hardware-configuration.nix
+  #        ./secret
+  #
+  #        home-manager.nixosModules.home-manager
+  #
+  #        {
+  #          home-manager.useGlobalPkgs = true;
+  #          home-manager.useUserPackages = true;
+  #          home-manager.users.Topaz = import ./fisher/home.nix;
+  #          home-manager.extraSpecialArgs = {
+  #             inherit  inputs noctalia wallpapers;
+  #          };
+  #        }
+  #      ];
+  #    };
+  #    nixosConfigurations.WSL2-NixOS = nixpkgs.lib.nixosSystem {
+  #      system = "x86_64-linux";
+  #      modules = [
+  #        nixos-wsl.nixosModules.wsl
+  #        ./WSL/configuration.nix
+  #
+  #        home-manager.nixosModules.home-manager
+  #
+  #        {
+  #          home-manager.useGlobalPkgs = true;
+  #          home-manager.useUserPackages = true;
+  #          home-manager.users.Topaz = import ./WSL/home.nix;
+  #          # home-manager.extraSpecialArgs = inputs;
+  #        }
+  #      ];
+  #    };
+  #
+  #    nixosConfigurations.HyperV = nixpkgs.lib.nixosSystem {
+  #
+  #      system = "x86_64-linux";
+  #      specialArgs = {
+  #        inherit inputs nixpkgs-unstable sops-nix mysecrets wallpapers noctalia;
+  #      };
+  #      modules = [
+  #        ./HyperV/configuration.nix
+  #        ./HyperV/hardware-configuration.nix
+  #        ./secret
+  #
+  #        home-manager.nixosModules.home-manager
+  #
+  #        {
+  #          home-manager.useGlobalPkgs = true;
+  #          home-manager.useUserPackages = true;
+  #          home-manager.users.Topaz = import ./HyperV/home.nix;
+  #          home-manager.extraSpecialArgs = {
+  #             inherit  inputs noctalia wallpapers;
+  #          };
+  #        }
+  #      ];
+  #    };
+  #  };
 }
