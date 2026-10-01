@@ -13,6 +13,7 @@
 }@args:
 let
   name = "fisher";
+  hostname = "Fisher";
   base-modules = {
     nixos-modules =
       (map mylib.relativeToRoot [
@@ -58,11 +59,11 @@ let
 in
 {
   nixosConfigurations = {
-    "${name}" = mylib.nixosSystem (modules-niri // args);
+    "${hostname}" = mylib.nixosSystem (modules-niri // args);
   };
 
   # generate iso image for hosts with desktop environment
   packages = {
-    "${name}" = inputs.self.nixosConfigurations."${name}".config.system.build.images.iso;
+    "${hostname}" = inputs.self.nixosConfigurations."${hostname}".config.system.build.images.iso;
   };
 }
