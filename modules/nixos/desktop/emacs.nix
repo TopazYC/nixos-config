@@ -2,18 +2,27 @@
 # https://github.com/doomemacs. This module sets it up to meet my particular
 # Doomy needs.
 
-{ lib, config, pkgs,
+{
+  lib,
+  config,
+  pkgs,
   emacs-overlay,
   myvars,
-... }:
+  ...
+}:
 
 with lib;
-let cfg = config.modules.editors.emacs;
-    emacs = with pkgs; (emacsPackagesFor emacs31-pgtk).emacsWithPackages
-      (epkgs: with epkgs; [
+let
+  cfg = config.modules.editors.emacs;
+  emacs =
+    with pkgs;
+    (emacsPackagesFor emacs31-pgtk).emacsWithPackages (
+      epkgs: with epkgs; [
         vterm
-      ]);
-in {
+      ]
+    );
+in
+{
   options.modules.editors.emacs = {
     enable = mkEnableOption "emacs";
   };
@@ -24,31 +33,36 @@ in {
     ];
 
     users.users."${myvars.username}".packages = with pkgs; [
-     # (mkLauncherEntry "Emacs (Debug Mode)" {
-     #   description = "Start Emacs in debug mode";
-     #   icon = "emacs";
-     #   exec = "${emacs}/bin/emacs --debug-init";
-     # })
+      # (mkLauncherEntry "Emacs (Debug Mode)" {
+      #   description = "Start Emacs in debug mode";
+      #   icon = "emacs";
+      #   exec = "${emacs}/bin/emacs --debug-init";
+      # })
 
       ## Emacs itself
-      binutils            # native-comp needs 'as', provided by this
-      emacs               # HEAD + native-comp
+      binutils # native-comp needs 'as', provided by this
+      emacs # HEAD + native-comp
 
       ## Doom dependencies
       git
       ripgrep
-      gnutls              # for TLS connectivity
+      gnutls # for TLS connectivity
 
       ## Optional dependencies
-      fd                  # faster projectile indexing
-      imagemagick         # for image-dired
-      (mkIf (config.programs.gnupg.agent.enable)
-        pinentry-emacs)   # in-emacs gnupg prompts
-      zstd                # for undo-fu-session/undo-tree compression
+      fd # faster projectile indexing
+      imagemagick # for image-dired
+      (mkIf (config.programs.gnupg.agent.enable) pinentry-emacs) # in-emacs gnupg prompts
+      zstd # for undo-fu-session/undo-tree compression
 
       ## Module dependencies
       # :checkers spell
-      (aspellWithDicts (ds: with ds; [ en en-computers en-science ]))
+      (aspellWithDicts (
+        ds: with ds; [
+          en
+          en-computers
+          en-science
+        ]
+      ))
       # :emacs dired +dirvish
       ffmpegthumbnailer
       mediainfo

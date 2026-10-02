@@ -19,13 +19,13 @@ let
     # NOTE: Tencent replaces the file behind these versionless URLs, so the hashes
     # must be refreshed with `nix store prefetch-file` whenever they stop matching.
     # Last refreshed: 2026-09-19.
-#    aarch64-linux = {
-#      version = "4.1.1.8";
-#      src = fetchurl {
-#        url = "https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_arm64.AppImage";
-#        hash = "sha256-zihf1qzRuhY2oKSP3qqIm3bS3/xWZRjRpfONxDe6kRc=";
-#      };
-#    };
+    #    aarch64-linux = {
+    #      version = "4.1.1.8";
+    #      src = fetchurl {
+    #        url = "https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_arm64.AppImage";
+    #        hash = "sha256-zihf1qzRuhY2oKSP3qqIm3bS3/xWZRjRpfONxDe6kRc=";
+    #      };
+    #    };
     x86_64-linux = {
       version = "4.1.1.8";
       src = fetchurl {

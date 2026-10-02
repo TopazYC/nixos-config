@@ -19,15 +19,15 @@ in
       mitmproxy # http/https proxy tool
       wireshark # network analyzer
     ]
-    # AI Agent Tools
-#    ++ [
-#      # Agents
-#      agentPackages.codex
-#      agentPackages.opencode
-#      agentPackages.kimi-code
-#      agentPackages.pi
-#      agentPackages.omp
-#      agentPackages.crush
-#    ]
-;
+  # AI Agent Tools
+  #    ++ [
+  #      # Agents
+  #      agentPackages.codex
+  #      agentPackages.opencode
+  #      agentPackages.kimi-code
+  #      agentPackages.pi
+  #      agentPackages.omp
+  #      agentPackages.crush
+  #    ]
+  ;
 }

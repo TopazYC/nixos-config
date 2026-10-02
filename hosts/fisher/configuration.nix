@@ -5,11 +5,20 @@
 # NixOS-WSL specific options are documented on the NixOS-WSL repository:
 # https://github.com/nix-community/NixOS-WSL
 
-{ config, lib,mylib, pkgs, nixpkgs-unstable, inputs, sops-nix, ... }:
+{
+  config,
+  lib,
+  mylib,
+  pkgs,
+  nixpkgs-unstable,
+  inputs,
+  sops-nix,
+  ...
+}:
 
 {
   system.stateVersion = "25.11";
-  networking.hostName = "Fisher"; 
+  networking.hostName = "Fisher";
 
   nix.settings.substituters = [
     "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/store"
@@ -27,72 +36,77 @@
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
   networking.networkmanager.enable = true;
-  
 
   time.timeZone = "Asia/Shanghai";
   i18n.defaultLocale = "en_US.UTF-8";
-  
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
 
   networking.firewall = {
     enable = true;
     # allowedTCPPorts = [ 3391 ];
   };
 
-  
   # set the default editor to be vim
   # environment.variables.EDITOR = "vim";
 
-#  users.mutableUsers = false;
-#  users.users.Topaz = {
-#    isNormalUser = true;
-#    description = "Topaz";
-#    extraGroups = ["networkmanager" "wheel" "audio" "input"];
-#    uid = 1000;
-#
-#    packages = with pkgs; [ ];
-#    #hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
-#    # hashedPasswordFile = config.sops.secrets.host_user_password.path;
-#    hashedPasswordFile = "/etc/nixos/passwd.file";
-#  };
-##   services.fprintd.enable = true;
-##   services.fprintd.tod.enable = true;
-## services.fprintd.tod.driver = pkgs.libfprint-2-tod1-elan;
-environment.sessionVariables = {
-  GTK_IM_MODULE = null;
-  QT_IM_MODULE = null;
-};
+  #  users.mutableUsers = false;
+  #  users.users.Topaz = {
+  #    isNormalUser = true;
+  #    description = "Topaz";
+  #    extraGroups = ["networkmanager" "wheel" "audio" "input"];
+  #    uid = 1000;
+  #
+  #    packages = with pkgs; [ ];
+  #    #hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
+  #    # hashedPasswordFile = config.sops.secrets.host_user_password.path;
+  #    hashedPasswordFile = "/etc/nixos/passwd.file";
+  #  };
+  ##   services.fprintd.enable = true;
+  ##   services.fprintd.tod.enable = true;
+  ## services.fprintd.tod.driver = pkgs.libfprint-2-tod1-elan;
+  environment.sessionVariables = {
+    GTK_IM_MODULE = null;
+    QT_IM_MODULE = null;
+  };
 
-#  users.users.root = {
-#    # hashedPasswordFile = config.sops.secrets.host_root_password.path;
-#    hashedPasswordFile = "/etc/nixos/passwd.file";
-#    #hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
-#  };
+  #  users.users.root = {
+  #    # hashedPasswordFile = config.sops.secrets.host_root_password.path;
+  #    hashedPasswordFile = "/etc/nixos/passwd.file";
+  #    #hashedPassword = "$6$UoPit41NYB.9dn00$YeomG3oTeBqfQfQxezRJ0LszdDeuyRtuhoQ5mYOtTuyxQDxus773WHLjtxVJz.S33D1mFLA7catWSHc3VUxdX1";
+  #  };
 
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = with pkgs; [
-    git vim wget curl tree
+    git
+    vim
+    wget
+    curl
+    tree
     alacritty # Terminal Emulator
     microsoft-edge
   ];
 
-services.openssh = {
-  enable = true;
-  settings = {
-    PasswordAuthentication = false;
-    PermitRootLogin = "no";
-    PermitEmptyPasswords = false;
-    KbdInteractiveAuthentication = false;
-    ChallengeResponseAuthentication = false;
-    X11Forwarding = true;
-    AllowTcpForwarding = true;
-  AllowUsers = [ "Topaz" ];
-  DenyUsers = [ "root" ];
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = false;
+      PermitRootLogin = "no";
+      PermitEmptyPasswords = false;
+      KbdInteractiveAuthentication = false;
+      ChallengeResponseAuthentication = false;
+      X11Forwarding = true;
+      AllowTcpForwarding = true;
+      AllowUsers = [ "Topaz" ];
+      DenyUsers = [ "root" ];
+    };
+    ports = [ 35555 ];
+    openFirewall = true;
   };
-  ports = [35555];
-  openFirewall = true;
-};
 
   programs.nh = {
     enable = true;
@@ -109,10 +123,10 @@ services.openssh = {
 
   #modules.desktop.wayland.enable = true;
 
-##  networking.firewall = {
-##    trustedInterfaces = [ "Mihomo" ];
-##    extraReversePathFilterRules = ''
-##      iifname { "Mihomo" } accept comment "trusted interface"
-##    '';
-##  };
+  ##  networking.firewall = {
+  ##    trustedInterfaces = [ "Mihomo" ];
+  ##    extraReversePathFilterRules = ''
+  ##      iifname { "Mihomo" } accept comment "trusted interface"
+  ##    '';
+  ##  };
 }

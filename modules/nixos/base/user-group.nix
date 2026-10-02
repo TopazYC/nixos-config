@@ -42,10 +42,10 @@
     ];
   };
 
-# TODO: fix the SSH config later.
+  # TODO: fix the SSH config later.
   # root's ssh key are mainly used for remote deployment
   users.users.root = {
     hashedPassword = myvars.hashedPassword;
-#    openssh.authorizedKeys.keys = myvars.mainSshAuthorizedKeys ++ myvars.secondaryAuthorizedKeys;
+    #    openssh.authorizedKeys.keys = myvars.mainSshAuthorizedKeys ++ myvars.secondaryAuthorizedKeys;
   };
 }

@@ -18,30 +18,30 @@
   home.packages =
     with pkgs;
     [
- #     colmena # nixos's remote deployment tool
+      #     colmena # nixos's remote deployment tool
 
- #     tokei # count lines of code, alternative to cloc
+      #     tokei # count lines of code, alternative to cloc
 
- #     # db related
- #     # mycli
- #     pgcli
- #     mongosh
- #     sqlite
+      #     # db related
+      #     # mycli
+      #     pgcli
+      #     mongosh
+      #     sqlite
 
- #     # embedded development
- #     minicom
+      #     # embedded development
+      #     minicom
 
- #     # ai related
- #     python313Packages.huggingface-hub # huggingface-cli
- #     yt-dlp # youtube/bilibili/soundcloud/... video/music downloader
+      #     # ai related
+      #     python313Packages.huggingface-hub # huggingface-cli
+      #     yt-dlp # youtube/bilibili/soundcloud/... video/music downloader
 
- #     # misc
- #     devbox
- #     bfg-repo-cleaner # remove large files from git history
- #     k6 # load testing tool
+      #     # misc
+      #     devbox
+      #     bfg-repo-cleaner # remove large files from git history
+      #     k6 # load testing tool
 
- #     # solve coding extercises - learn by doing
- #     exercism
+      #     # solve coding extercises - learn by doing
+      #     exercism
 
       # Automatically trims your branches whose tracking remote refs are merged or gone
       # It's really useful when you work on a project for a long time.
@@ -52,7 +52,7 @@
     ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       # need to run `conda-install` before using it
       # need to run `conda-shell` before using command `conda`
- #     conda
+      #     conda
     ];
 
   programs = {

@@ -34,17 +34,17 @@
     {
       # NOTE: use config dir as noctalia config because config is not only settings.json
       # https://github.com/noctalia-dev/noctalia-shell/blob/main/nix/home-module.nix#L211-L220
-       "noctalia".source = mkSymlink "${confPath}/config";
+      "noctalia".source = mkSymlink "${confPath}/config";
       "qt6ct/qt6ct.conf".source = mkSymlink "${confPath}/qt6ct.conf";
     };
 
   systemd.user.services.noctalia-shell = {
-  #  Unit = {
-  #    Description = "Noctalia Shell - Wayland desktop shell";
-  #    Documentation = "https://docs.noctalia.dev/docs";
-  #    PartOf = [ config.wayland.systemd.target ];
-  #    After = [ config.wayland.systemd.target ];
-  #  };
+    #  Unit = {
+    #    Description = "Noctalia Shell - Wayland desktop shell";
+    #    Documentation = "https://docs.noctalia.dev/docs";
+    #    PartOf = [ config.wayland.systemd.target ];
+    #    After = [ config.wayland.systemd.target ];
+    #  };
 
     Service = {
       ExecStart = lib.getExe config.programs.noctalia-shell.package;

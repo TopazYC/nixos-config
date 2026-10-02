@@ -12,3 +12,4 @@ This is my first try to learn NixOS and build my own configuration block by bloc
 1. there is a vsock bug of systemd on Hyper-V. This will be solved in v360 in the future.`
    But I will not use NixOS in Hyper-V later.
 
+

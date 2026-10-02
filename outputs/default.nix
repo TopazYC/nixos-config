@@ -24,29 +24,29 @@ let
       inherit mylib myvars pkgs-stable;
 
       # Temporary override until numtide/llm-agents.nix#9696 (codex 0.156.0) lands.
-#      llm-agents = inputs.llm-agents // {
-#        packages = lib.mapAttrs (
-#          _system: packages:
-#          packages
-#          // {
-#            codex =
-#              (packages.codex.override {
-#                version = "0.156.1";
-#                hash = "sha256-H53f57hmnyCtn5yPxtBe/A92qyQyzQBeU/vK2qSBrvI=";
-#                cargoVendor = {
-#                  cargoHash = "sha256-W87rX/W2J1pwqNrihX+Rj6DfagoZYuB6C+l/S4BhyJM=";
-#                };
-#              }).overrideAttrs
-#                (old: {
-#                  # codex's codex-chatgpt crate exceeds rustc's default recursion
-#                  # limit; the other crates already set this attribute.
-#                  postPatch = (old.postPatch or "") + ''
-#                    sed -i '1i #![recursion_limit = "256"]' chatgpt/src/lib.rs
-#                  '';
-#                });
-#          }
-#        ) inputs.llm-agents.packages;
-#      };
+      #      llm-agents = inputs.llm-agents // {
+      #        packages = lib.mapAttrs (
+      #          _system: packages:
+      #          packages
+      #          // {
+      #            codex =
+      #              (packages.codex.override {
+      #                version = "0.156.1";
+      #                hash = "sha256-H53f57hmnyCtn5yPxtBe/A92qyQyzQBeU/vK2qSBrvI=";
+      #                cargoVendor = {
+      #                  cargoHash = "sha256-W87rX/W2J1pwqNrihX+Rj6DfagoZYuB6C+l/S4BhyJM=";
+      #                };
+      #              }).overrideAttrs
+      #                (old: {
+      #                  # codex's codex-chatgpt crate exceeds rustc's default recursion
+      #                  # limit; the other crates already set this attribute.
+      #                  postPatch = (old.postPatch or "") + ''
+      #                    sed -i '1i #![recursion_limit = "256"]' chatgpt/src/lib.rs
+      #                  '';
+      #                });
+      #          }
+      #        ) inputs.llm-agents.packages;
+      #      };
 
       # use unstable branch for some packages to get the latest updates
       # pkgs-unstable = import inputs.nixpkgs-unstable {
@@ -54,38 +54,38 @@ let
       #   # To use chrome, we need to allow the installation of non-free software
       #   config.allowUnfree = true;
       # };
- #     pkgs-2505 = import inputs.nixpkgs-2505 {
- #       inherit system;
- #       # To use chrome, we need to allow the installation of non-free software
- #       config.allowUnfree = true;
- #     };
- #     pkgs-patched = import inputs.nixpkgs-patched {
- #       inherit system;
- #       # to use chrome, we need to allow the installation of non-free software
- #       config.allowUnfree = true;
- #     };
+      #     pkgs-2505 = import inputs.nixpkgs-2505 {
+      #       inherit system;
+      #       # To use chrome, we need to allow the installation of non-free software
+      #       config.allowUnfree = true;
+      #     };
+      #     pkgs-patched = import inputs.nixpkgs-patched {
+      #       inherit system;
+      #       # to use chrome, we need to allow the installation of non-free software
+      #       config.allowUnfree = true;
+      #     };
       pkgs-master = import inputs.nixpkgs-master {
         inherit system;
         # to use chrome, we need to allow the installation of non-free software
         config.allowUnfree = true;
       };
-#      pkgs-blender = import inputs.nixpkgs-blender {
-#        inherit system;
-#        config = lib.optionalAttrs (system == "x86_64-linux") {
-#          allowUnfree = true;
-#          cudaSupport = true;
-#          # CUDA compute capability 8.9 targets the RTX 4090 (Ada) and avoids building kernels
-#          # for unrelated GPU architectures.
-#          cudaCapabilities = [ "8.9" ];
-#        };
-#        overlays = lib.optional (system == "x86_64-linux") (
-#          _: prev: {
-#            # CMake 4.2+ breaks OIDN's nested CUDA build with nixpkgs' split CUDAToolkit_ROOT.
-#            # https://github.com/NixOS/nixpkgs/issues/544701
-#            openimagedenoise = prev.openimagedenoise.override { cmake = pkgs-stable.cmake; };
-#          }
-#        );
-#      };
+      #      pkgs-blender = import inputs.nixpkgs-blender {
+      #        inherit system;
+      #        config = lib.optionalAttrs (system == "x86_64-linux") {
+      #          allowUnfree = true;
+      #          cudaSupport = true;
+      #          # CUDA compute capability 8.9 targets the RTX 4090 (Ada) and avoids building kernels
+      #          # for unrelated GPU architectures.
+      #          cudaCapabilities = [ "8.9" ];
+      #        };
+      #        overlays = lib.optional (system == "x86_64-linux") (
+      #          _: prev: {
+      #            # CMake 4.2+ breaks OIDN's nested CUDA build with nixpkgs' split CUDAToolkit_ROOT.
+      #            # https://github.com/NixOS/nixpkgs/issues/544701
+      #            openimagedenoise = prev.openimagedenoise.override { cmake = pkgs-stable.cmake; };
+      #          }
+      #        );
+      #      };
 
       pkgs-x64 = import nixpkgs {
         system = "x86_64-linux";
@@ -144,111 +144,110 @@ in
   packages = forAllSystems (system: allSystems.${system}.packages or { });
 
   # Colmena - remote deployment via SSH
-#  colmena = {
-#    meta =
-#      (
-#        let
-#          system = "x86_64-linux";
-#        in
-#        {
-#          # colmena's default nixpkgs & specialArgs
-#          nixpkgs = import nixpkgs { inherit system; };
-#          specialArgs = genSpecialArgs system;
-#        }
-#      )
-#      // {
-#        # per-node nixpkgs & specialArgs
-#        nodeNixpkgs = lib.attrsets.mergeAttrsList (
-#          map (it: it.colmenaMeta.nodeNixpkgs or { }) nixosSystemValues
-#        );
-#        nodeSpecialArgs = lib.attrsets.mergeAttrsList (
-#          map (it: it.colmenaMeta.nodeSpecialArgs or { }) nixosSystemValues
-#        );
-#      };
-#  }
-#  // lib.attrsets.mergeAttrsList (map (it: it.colmena or { }) nixosSystemValues);
-#
+  #  colmena = {
+  #    meta =
+  #      (
+  #        let
+  #          system = "x86_64-linux";
+  #        in
+  #        {
+  #          # colmena's default nixpkgs & specialArgs
+  #          nixpkgs = import nixpkgs { inherit system; };
+  #          specialArgs = genSpecialArgs system;
+  #        }
+  #      )
+  #      // {
+  #        # per-node nixpkgs & specialArgs
+  #        nodeNixpkgs = lib.attrsets.mergeAttrsList (
+  #          map (it: it.colmenaMeta.nodeNixpkgs or { }) nixosSystemValues
+  #        );
+  #        nodeSpecialArgs = lib.attrsets.mergeAttrsList (
+  #          map (it: it.colmenaMeta.nodeSpecialArgs or { }) nixosSystemValues
+  #        );
+  #      };
+  #  }
+  #  // lib.attrsets.mergeAttrsList (map (it: it.colmena or { }) nixosSystemValues);
+  #
   # macOS Hosts
-#  darwinConfigurations = lib.attrsets.mergeAttrsList (
-#    map (it: it.darwinConfigurations or { }) darwinSystemValues
-#  );
+  #  darwinConfigurations = lib.attrsets.mergeAttrsList (
+  #    map (it: it.darwinConfigurations or { }) darwinSystemValues
+  #  );
 
-
-#  # Eval Tests for all NixOS & darwin systems.
-#  evalTests = lib.lists.all (it: it.evalTests == { }) allSystemValues;
-#
-#  checks = forAllSystems (system: {
-#    # eval-tests per system. `nix flake check` requires every check to be a
-#    # derivation, so wrap the boolean result in one instead of returning a bool.
-#    eval-tests =
-#      let
-#        pkgs = nixpkgs.legacyPackages.${system};
-#        results = allSystems.${system}.evalTests;
-#      in
-#      pkgs.runCommand "eval-tests" { } (
-#        if results == { } then
-#          "touch $out"
-#        else
-#          "echo 'eval tests failed: evalTests is not empty' >&2; exit 1"
-#      );
-#
-#    pre-commit-check = pre-commit-hooks.lib.${system}.run {
-#      src = mylib.relativeToRoot ".";
-#      hooks = {
-#        nixfmt = {
-#          enable = true;
-#          settings.width = 100;
-#        };
-#        # Source code spell checker
-#        typos = {
-#          enable = true;
-#          settings = {
-#            write = true; # Automatically fix typos
-#            configPath = ".typos.toml"; # relative to the flake root
-#            exclude = "rime-data/";
-#          };
-#        };
-#        prettier = {
-#          enable = true;
-#          settings = {
-#            write = true; # Automatically format files
-#            configPath = ".prettierrc.yaml"; # relative to the flake root
-#          };
-#        };
-#        # deadnix.enable = true; # detect unused variable bindings in `*.nix`
-#        # statix.enable = true; # lints and suggestions for Nix code(auto suggestions)
-#      };
-#    };
-#  });
-#
-#  # Development Shells
-#  devShells = forAllSystems (
-#    system:
-#    let
-#      pkgs = nixpkgs.legacyPackages.${system};
-#    in
-#    {
-#      default = pkgs.mkShell {
-#        packages = with pkgs; [
-#          # fix https://discourse.nixos.org/t/non-interactive-bash-errors-from-flake-nix-mkshell/33310
-#          bashInteractive
-#          # fix `cc` replaced by clang, which causes nvim-treesitter compilation error
-#          gcc
-#          # Nix-related
-#          nixfmt
-#          deadnix
-#          statix
-#          # spell checker
-#          typos
-#          # code formatter
-#          prettier
-#        ];
-#        name = "dots";
-#        inherit (self.checks.${system}.pre-commit-check) shellHook;
-#      };
-#    }
-#  );
-#
-#  # Format the nix code in this flake
-#  formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt);
+  #  # Eval Tests for all NixOS & darwin systems.
+  #  evalTests = lib.lists.all (it: it.evalTests == { }) allSystemValues;
+  #
+  #  checks = forAllSystems (system: {
+  #    # eval-tests per system. `nix flake check` requires every check to be a
+  #    # derivation, so wrap the boolean result in one instead of returning a bool.
+  #    eval-tests =
+  #      let
+  #        pkgs = nixpkgs.legacyPackages.${system};
+  #        results = allSystems.${system}.evalTests;
+  #      in
+  #      pkgs.runCommand "eval-tests" { } (
+  #        if results == { } then
+  #          "touch $out"
+  #        else
+  #          "echo 'eval tests failed: evalTests is not empty' >&2; exit 1"
+  #      );
+  #
+  #    pre-commit-check = pre-commit-hooks.lib.${system}.run {
+  #      src = mylib.relativeToRoot ".";
+  #      hooks = {
+  #        nixfmt = {
+  #          enable = true;
+  #          settings.width = 100;
+  #        };
+  #        # Source code spell checker
+  #        typos = {
+  #          enable = true;
+  #          settings = {
+  #            write = true; # Automatically fix typos
+  #            configPath = ".typos.toml"; # relative to the flake root
+  #            exclude = "rime-data/";
+  #          };
+  #        };
+  #        prettier = {
+  #          enable = true;
+  #          settings = {
+  #            write = true; # Automatically format files
+  #            configPath = ".prettierrc.yaml"; # relative to the flake root
+  #          };
+  #        };
+  #        # deadnix.enable = true; # detect unused variable bindings in `*.nix`
+  #        # statix.enable = true; # lints and suggestions for Nix code(auto suggestions)
+  #      };
+  #    };
+  #  });
+  #
+  #  # Development Shells
+  #  devShells = forAllSystems (
+  #    system:
+  #    let
+  #      pkgs = nixpkgs.legacyPackages.${system};
+  #    in
+  #    {
+  #      default = pkgs.mkShell {
+  #        packages = with pkgs; [
+  #          # fix https://discourse.nixos.org/t/non-interactive-bash-errors-from-flake-nix-mkshell/33310
+  #          bashInteractive
+  #          # fix `cc` replaced by clang, which causes nvim-treesitter compilation error
+  #          gcc
+  #          # Nix-related
+  #          nixfmt
+  #          deadnix
+  #          statix
+  #          # spell checker
+  #          typos
+  #          # code formatter
+  #          prettier
+  #        ];
+  #        name = "dots";
+  #        inherit (self.checks.${system}.pre-commit-check) shellHook;
+  #      };
+  #    }
+  #  );
+  #
+  #  # Format the nix code in this flake
+  #  formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt);
 }

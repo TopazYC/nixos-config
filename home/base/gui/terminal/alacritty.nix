@@ -58,8 +58,8 @@
           program = "${pkgs.bash}/bin/bash";
           args = [
             "--login"
-#            "-c"
-#            "nu --login --interactive"
+            #            "-c"
+            #            "nu --login --interactive"
           ];
         };
         # Controls the ability to write to the system clipboard with the OSC 52 escape sequence.

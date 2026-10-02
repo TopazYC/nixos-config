@@ -2,13 +2,18 @@
 # your system. Help is available in the configuration.nix(5) man page, on
 # https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-    ];
+  imports = [
+    # Include the results of the hardware scan.
+    ./hardware-configuration.nix
+  ];
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
@@ -46,22 +51,25 @@
   # Enable the X11 windowing system.
   services.xserver.enable = true;
 
-
   # Enable the GNOME Desktop Environment.
   services.displayManager.gdm.enable = true;
   services.desktopManager.gnome.enable = true;
 
   environment.variables.EDITOR = "vim";
   users.mutableUsers = false;
-  
+
   users.users.Topaz = {
     isNormalUser = true;
     description = "Topaz";
-    extraGroups = [ "networkmanager" "wheel" "audio"];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+      "audio"
+    ];
     uid = 1000;
     hashedPasswordFile = "/etc/nixos/passwd.file";
   };
-  
+
   users.users.root = {
     hashedPasswordFile = "/etc/nixos/passwd.file";
   };
@@ -102,7 +110,8 @@
   # You can use https://search.nixos.org/ to find more packages (and options).
   nixpkgs.config.allowUnfree = true;
   environment.systemPackages = with pkgs; [
-    vim git
+    vim
+    git
     wget
     microsoft-edge
   ];
@@ -142,4 +151,3 @@
 
   system.stateVersion = "26.05"; # Did you read the comment?
 }
-

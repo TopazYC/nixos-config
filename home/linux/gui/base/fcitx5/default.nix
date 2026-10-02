@@ -1,7 +1,10 @@
-{ config, pkgs,
+{
+  config,
+  pkgs,
   catppuccin-fcitx5,
   fcitx5-theme-mint,
-... }:
+  ...
+}:
 {
   catppuccin.fcitx5.enable = false;
   xdg.dataFile."fcitx5/themes" = {
@@ -9,17 +12,13 @@
     recursive = true;
   };
   xdg.dataFile = {
-    "fcitx5/themes/mint-blue-dark".source =
-      "${fcitx5-theme-mint}/mint-blue-dark";
+    "fcitx5/themes/mint-blue-dark".source = "${fcitx5-theme-mint}/mint-blue-dark";
 
-    "fcitx5/themes/mint-blue-light".source =
-      "${fcitx5-theme-mint}/mint-blue-light";
+    "fcitx5/themes/mint-blue-light".source = "${fcitx5-theme-mint}/mint-blue-light";
 
-    "fcitx5/themes/mint-green-dark".source =
-      "${fcitx5-theme-mint}/mint-green-dark";
+    "fcitx5/themes/mint-green-dark".source = "${fcitx5-theme-mint}/mint-green-dark";
 
-    "fcitx5/themes/mint-green-light".source =
-      "${fcitx5-theme-mint}/mint-green-light";
+    "fcitx5/themes/mint-green-light".source = "${fcitx5-theme-mint}/mint-green-light";
   };
   xdg.configFile = {
     "fcitx5/profile" = {
@@ -32,8 +31,8 @@
       source = ./classicui.conf;
       force = true;
     };
-#    "mozc/config1.db".source =
-#      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/home/linux/gui/base/fcitx5/mozc-config1.db";
+    #    "mozc/config1.db".source =
+    #      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/home/linux/gui/base/fcitx5/mozc-config1.db";
   };
 
   i18n.inputMethod = {
@@ -56,13 +55,13 @@
       # Korean
       #fcitx5-hangul
     ];
-   # fcitx5.settings = {
-   #   addons.classicui = {
-   #     globalSection = {
-   #       "Vertical Candidate List" = true;
-   #       "PerScreenDPI" = true;
-   #     };
-   #   };
-   # };
+    # fcitx5.settings = {
+    #   addons.classicui = {
+    #     globalSection = {
+    #       "Vertical Candidate List" = true;
+    #       "PerScreenDPI" = true;
+    #     };
+    #   };
+    # };
   };
 }

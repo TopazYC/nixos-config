@@ -14,12 +14,12 @@
     defaultApplications =
       let
         browser = [
-	  "microsoft-edge.desktop"
+          "microsoft-edge.desktop"
           "google-chrome.desktop"
           "firefox.desktop"
         ];
         editor = [
-	  "emacs.desktop"
+          "emacs.desktop"
           "nvim.desktop"
           "code.desktop"
         ];

@@ -13,7 +13,6 @@
     remmina
     freerdp # required by remmina
 
-
     ##netease-cloud-music-gtk
     go-musicfox
     # my custom hardened packages

@@ -55,7 +55,7 @@
     # It supports a richer feature set than the standard linux console VT,
     # including full unicode support, and when the video card supports drm should be much faster.
 
-#  the following configuration only supported in master branch.
+    #  the following configuration only supported in master branch.
     enable = true;
     extraOptions = "--term xterm-256color";
     config = {

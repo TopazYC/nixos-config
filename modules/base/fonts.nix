@@ -56,24 +56,22 @@ in
       # https://github.com/subframe7536/maple-font
       maple-mono.NF-CN-unhinted
     ]
-    ++  lib.optionals config.modules.editors.emacs.enable [
+    ++ lib.optionals config.modules.editors.emacs.enable [
       # Emacs Default Required
       symbola
       # I like
-      cascadia-code ]
-    ++  lib.optionals config.modules.editors.emacs.enable [
+      cascadia-code
+    ]
+    ++ lib.optionals config.modules.editors.emacs.enable [
       # palatino, tex(mathpazo)
-      (
-        pkgs.stdenvNoCC.mkDerivation{
-	pname="palatino-nova";
-	version = "1.0";
-	src = mylib.relativeToRoot "assets/fonts/palatino-nova";
-	installPhase = "
+      (pkgs.stdenvNoCC.mkDerivation {
+        pname = "palatino-nova";
+        version = "1.0";
+        src = mylib.relativeToRoot "assets/fonts/palatino-nova";
+        installPhase = "
 	  mkdir -p $out/share/fonts/truetype
 	  cp *.ttf $out/share/fonts/truetype/
 	";
-	}
-      )
-    ]
-    ;
+      })
+    ];
 }

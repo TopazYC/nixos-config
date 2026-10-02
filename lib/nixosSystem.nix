@@ -28,4 +28,3 @@ nixpkgs.lib.nixosSystem {
       }
     ]);
 }
-

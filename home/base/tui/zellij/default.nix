@@ -13,7 +13,7 @@ in
   # Disable catppuccin to avoid conflict with my non-nix config.
   catppuccin.zellij.enable = false;
 
-#  # auto start zellij in nushell
+  #  # auto start zellij in nushell
   programs.nushell.extraConfig = ''
     # auto start zellij
     # except when in emacs or zellij itself
