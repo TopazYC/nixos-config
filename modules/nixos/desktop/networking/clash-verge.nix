@@ -19,7 +19,7 @@
 {
   programs.clash-verge = {
     enable = true;
-    package = pkgs.clash-verge-rev;
+    package = pkgs-master.clash-verge-rev;
     autoStart = true;
     serviceMode = true;
     tunMode = true;

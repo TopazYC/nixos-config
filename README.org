@@ -5,11 +5,10 @@ This is my first try to learn NixOS and build my own configuration block by bloc
 ** TODOs
 1. encryption
 2. syncthing
-3. touchpad
-4. custom alias.
-5. live iso
-6. wifi
-7. plugins for edge
+3. custom alias.
+4. live iso
+5. wifi
+6. fcitx5 refresh and sync.
 ** BUGs
 1. there is a vsock bug of systemd on Hyper-V. This will be solved in v360 in the future.`
    But I will not use NixOS in Hyper-V later.
