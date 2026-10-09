@@ -253,6 +253,9 @@ binds {
 
     Mod+S { spawn "noctalia" "msg" "panel-toggle" "control-center"; }
     Mod+E { spawn "noctalia" "msg" "panel-toggle" "session"; }
+
+    // Toggle touchpad
+    Mod+Shift+T { spawn "nu" "/home/Topaz/.config/niri/toggle-touchpad.nu"; }
 }
 
 recent-windows {
