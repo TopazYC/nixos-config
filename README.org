@@ -8,7 +8,9 @@ This is my first try to learn NixOS and build my own configuration block by bloc
 3. touchpad
 4. custom alias.
 5. live iso
-** BUGS
+6. wifi
+7. plugins for edge
+** BUGs
 1. there is a vsock bug of systemd on Hyper-V. This will be solved in v360 in the future.`
    But I will not use NixOS in Hyper-V later.
 

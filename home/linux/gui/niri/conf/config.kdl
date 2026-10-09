@@ -9,6 +9,7 @@ include "./windowrules.kdl"
 include "./niri-hardware.kdl"
 include "./noctalia-shell.kdl"
 include "./spawn-at-startup.kdl"
+include "./libinput.kdl"
 
 spawn-sh-at-startup "bash ~/nixos-config/home/linux/gui/niri/reorder-workspaces.sh"
 
@@ -43,32 +44,6 @@ input {
         // - "window" - layout is tracked for each window individually.
         // track-layout "global"
     }
-
-    // Next sections include libinput settings.
-    // Omitting settings disables them, or leaves them at their default values.
-    // All commented-out settings here are examples, not defaults.
-    touchpad {
-        // tap  // tap-to-click
-        dwt // disable-when-typing.
-        // dwtp // disable-when-trackpointing.
-        natural-scroll // inverts the scrolling direction.
-        // accel-speed 0.2
-        // accel-profile "flat"
-        // tap-button-map "left-middle-right"
-    }
-
-    mouse {
-        // natural-scroll // inverts the scrolling direction.
-        // accel-speed 0.2
-        // accel-profile "flat"
-    }
-
-    // Uncomment this to make the mouse warp to the center of newly focused windows.
-    // warp-mouse-to-focus
-
-    // Focus windows and outputs automatically when moving the mouse into them.
-    // Setting max-scroll-amount="0%" makes it work only on windows already fully on screen.
-    // focus-follows-mouse max-scroll-amount="0%"
 }
 
 // Settings that influence how windows are positioned and sized.
