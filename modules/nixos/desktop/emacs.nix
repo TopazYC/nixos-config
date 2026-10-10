@@ -59,8 +59,8 @@ in
       (aspellWithDicts (
         ds: with ds; [
           en
-          en-computers
-          en-science
+          # en-computers
+          # en-science
         ]
       ))
       # :emacs dired +dirvish
