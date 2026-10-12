@@ -18,7 +18,7 @@ let
     # archive.org snapshots are not used because the CDN serves different builds per edge
     # NOTE: Tencent replaces the file behind these versionless URLs, so the hashes
     # must be refreshed with `nix store prefetch-file` whenever they stop matching.
-    # Last refreshed: 2026-09-19.
+    # Last refreshed: 2026-10-12.
     #    aarch64-linux = {
     #      version = "4.1.1.8";
     #      src = fetchurl {
@@ -30,7 +30,7 @@ let
       version = "4.1.1.8";
       src = fetchurl {
         url = "https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_x86_64.AppImage";
-        hash = "sha256-T1StKQLs1vb9xWgLc1R/gNVCO/RwsBI3pXmi5bPK7us=";
+        hash = "sha256-RSYYC8qYASh5FZmvEi/0eVACpXFaUQ9qZUgOK+aHQkQ=";
       };
     };
   };
