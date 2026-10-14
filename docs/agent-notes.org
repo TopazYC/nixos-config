@@ -1,0 +1,216 @@
+#+title: Agent Notes
+#+subtitle: 决策与踩坑记录（给未来的 agent 会话和自己看）
+#+date: 2026-10-15
+#+filetags: :agent:notes:
+#+startup: overview
+
+这个仓库只用 flake 构建 *Fisher* 一台主机，入口是
+=outputs/x86_64-linux/src/fisher.nix= ，它会加载 =hosts/fisher= 和
+=modules/nixos/desktop.nix= 。=simple/configuration.nix= 不在 flake 输出里，
+除非单独用，否则改它没用。
+
+本文件记录一些"代码里看不出来"的决策和坑，目的是让新开的 agent 会话读一遍
+就能恢复上下文，不必翻几 MB 的 transcript。
+
+* greetd + tuigreet 取代 GDM
+** 结论
+=hosts/fisher/configuration.nix= 里的 GDM 已关闭，改用 greetd + tuigreet 做登录器。
+终端会话由 tuigreet 直接 =--cmd= 拉起 =niri-session= 。
+** 为什么换
+
+1. *体积*。GDM 自己的 runtime closure 实测 =449.7 MiB= ；而 GDM 的 NixOS 模块
+   写死了 =systemd.packages = [ gdm gnome-session gnome-shell ]= ，会额外把整套
+   GNOME 登录栈拖进来：
+   | 包                  | closure  |
+   |---------------------+----------|
+   | =gdm-50.2=          | 449.7 MiB |
+   | =gnome-shell-50.4=  | 2.12 GiB |
+   | =mutter-50.4=       | 1.23 GiB |
+   | =gnome-session-50.1=| 2.12 GiB |
+   | =gjs-1.88.1=        | 177 MiB  |
+   | =accountsservice=   | 88.9 MiB |
+   | =tuigreet-0.11.1=   | 51.0 MiB |
+   | =greetd-0.10.3=     | 59.9 MiB |
+   #+begin_quote
+   这些 closure 彼此、以及与 glibc/GTK/mesa 等基础组件大量重叠，不能简单相加。
+   确定会消失的是 =gdm / gnome-shell / mutter / gnome-session /
+   gnome-control-center / accountsservice= 及其私有依赖。
+   =avahi / at-spi2 / xorg-server= 因为 cups、pipewire、gtk、lutris 仍会留下。
+   #+end_quote
+2. *不依赖图形栈*。tuigreet 是跑在 tty1 上的 TUI，登录前不需要 Xorg，也不需要
+   自己的 Wayland compositor 来画界面。
+3. *配置可预测*。纯命令行 flag，没有 dconf / AccountsService，也避开了
+   "GDM 50 在没有 =displayManager.defaultSession= 时 fallback 到 gnome-session
+   导致 login loop" 这类隐式行为。
+4. *本来就是原设计*。仓库里早有伏笔：
+   - =modules/nixos/desktop/security.nix=: =security.pam.services.greetd.enableGnomeKeyring = true;=
+   - =home/linux/gui/niri/default.nix= 曾生成 =~/.wayland-session= ，注释写明 "used by greetd"。
+
+** 代价 / 注意
+- 没有 GDM 的图形锁屏、快速用户切换、无障碍登录界面。锁屏靠 niri/noctalia 侧。
+- *指纹*：GDM 有内建 =gdm-fingerprint= PAM 流程；tuigreet 没有。现在
+  =services.fprintd= 是注释掉的，以后要用指纹需要另找方案。
+- 必须设 =services.greetd.useTextGreeter = true;= ，否则 systemd 启动日志会打断
+  TUI（该选项会把 =StandardError= 设成 =journal= ）。
+- =--remember= 依赖 =/var/cache/tuigreet= ；greetd 模块已用 =systemd.tmpfiles.rules=
+  自动创建，不用自己建。
+
+* 当前配置写法
+
+=modules/nixos/desktop.nix= 里 =mkIf cfgWayland.enable= 块内：
+
+#+begin_src nix
+services = {
+  xserver.enable = false; # disable xorg server
+  greetd = {
+    enable = true;
+    useTextGreeter = true;
+    settings = {
+      default_session = {
+        command = lib.concatStringsSep " " [
+          "${pkgs.tuigreet}/bin/tuigreet"
+          "--time"
+          "--remember"
+          "--remember-session"
+          "--asterisks"
+          # "--sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions"
+          "--cmd ${config.programs.niri.package}/bin/niri-session"
+        ];
+      };
+    };
+  };
+};
+#+end_src
+
+配套状态：
+
+- =hosts/fisher/configuration.nix= ：=services.displayManager.gdm.enable= 已注释。
+- =modules/nixos/desktop/security.nix= ：=security.pam.services.greetd.enableGnomeKeyring = true;= 保留，登录自动解锁 gnome-keyring。
+- =home/linux/gui/niri/default.nix= ：旧的 =~/.wayland-session= 脚本已注释掉。
+
+** =--cmd= 与 =--sessions= 的取舍
+
+- 现在用 =--cmd <niri-session 绝对路径>= ：直接进 niri，没有会话选择器。
+  此时 =--remember-session= 是空操作（无可记的会话），留着无害。
+- 想要会话菜单（niri / steam 等），改回：
+  #+begin_src nix
+  "--sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions"
+  #+end_src
+  *不要*用 =/run/current-system/sw/share/wayland-sessions= ——这个路径在当前系统上
+  *不存在*（=environment.pathsToLink= 默认不含 =share/wayland-sessions= ）。
+  niri/steam 的 =.desktop= 由 =displayManager.sessionPackages= 收进
+  =sessionData.desktops= 这个 derivation，靠 =XDG_DATA_DIRS= 暴露；而 greetd 是系统
+  服务，默认没有 =XDG_DATA_DIRS= ，所以必须显式指过去。
+
+* =.wayland-session= 这层间接寻址（历史遗留）
+
+原模板（继承自 ryan4yin）用：
+
+#+begin_src nix
+settings.default_session = {
+  user = myvars.username;
+  command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd $HOME/.wayland-session";
+};
+#+end_src
+
+它存在的原因：
+
+1. *解耦*。greetd 配置是系统级（改它要 root + rebuild），compositor 选择是用户级
+   （home-manager）。脚本是两者之间的缝，换 compositor 不用动系统配置。
+2. *能挂前置逻辑*。=~/.wayland-session= 会先停掉残留的 =niri.service= 再启动。
+3. *历史*：当时 nixpkgs 还没有完善的 =sessionPackages= / =.desktop= 机制，
+   =--cmd <compositor>= + 用户脚本是最省事的"厂商无关"方案。
+
+机制上的坑：
+
+- greetd 手册（=greetd(5)= ）：=default_session.command= 由 =sh(1)= 运行；
+  所以 =$HOME= 是在 *greeter 启动时* 展开的。
+- =greetd-ipc(7)= ：会话用 =start_session= 的 =cmd= 是 *argv 数组*，不再过 shell。
+- nixpkgs 的 greetd 模块把 =greeter= 用户定义成 =isSystemUser=true= 且不设 home，
+  而 users 模块的 home 默认是 =/var/empty= 。
+
+因此不设 =user = 你自己= ，=$HOME/.wayland-session= 会变成
+=/var/empty/.wayland-session= 。代价是 greeter 在你登录前就以你的 uid 运行。
+
+现在不需要它了：=niri-session= 自己会 =reset-failed= / =import-environment= /
+=dbus-update-activation-environment --all= / =systemctl --user --wait start niri.service= ，
+niri 的 =.desktop= 也通过 =programs.niri.enable= 注册了。旧脚本唯一多做的只是
+"强制停掉残留 niri.service"。所以新方案直接用 =--cmd niri-session= ，不再需要
+=$HOME= 技巧。
+
+* 踩坑记录
+
+** BUG：tuigreet 参数拼错 → 开机卡在空白 tty
+
+- *症状*：=just local= 成功，重启后 tty1 左上角只有闪烁光标，什么都不响应，
+  只能重启。
+- *根因*：=--remenber-session= 拼错（应为 =--remember-session= ）。tuigreet 用 clap
+  解析参数，遇到未知参数立即报错退出，退出码 1：
+  #+begin_example
+  Unrecognized option: 'remenber-session'
+  Usage: tuigreet [OPTIONS]
+  exit=1
+  #+end_example
+- *为什么症状这么"死"*，这条链缺一不可：
+  1. greetd 模块 =Restart = lib.mkIf cfg.restart "on-success"= ，退出码 1 不满足
+     ="on-success"= ，greetd 直接失败不重启。
+  2. =useTextGreeter = true= 时模块设 =StandardError = "journal"= ，错误只在 journal 里，
+     屏幕上看不到。
+  3. 同一选项还设 =TTYVTDisallocate = true= ，VT 被清空 → 只剩光标。
+  4. 模块 =systemd.services."autovt@tty1".enable = false= ，且 getty 模块只在没有
+     display manager 时才 want =autovt@tty1= ，所以 tty1 不会回落到 login 提示。
+- *修复*：=--remenber-session= → =--remember-session= 。
+
+** 排错 / 恢复手段
+
+- 看真实报错（屏幕上永远看不到）：
+  #+begin_src shell
+  systemctl status greetd
+  journalctl -u greetd -b
+  #+end_src
+- 切别的 tty：=Ctrl+Alt+F2=（笔记本可能 =Fn+F2= ）。logind 会在 VT 切换时自动拉起
+  getty，登录后可以回滚。
+- 进不去系统：systemd-boot 菜单里选上一代；或在启动项按 =e= 给内核加
+  =systemd.unit=multi-user.target= ，进文本模式后 =sudo nixos-rebuild switch --rollback= 。
+- 切换 display manager 建议先 =just local boot= 再重启，而不是直接 =switch= ：
+  greetd 模块 =restartIfChanged = false= ，运行时不会立刻接管，真正生效在重启那一下，
+  而 =boot= 给了你"重启前还能选旧代"的余地。
+
+* 常用验证命令
+
+#+begin_src shell
+just eval-host Fisher      # 只 eval
+just build-host Fisher     # 只构建
+just local boot            # 生成新代并设为下次启动
+just local switch          # 立即切换
+#+end_src
+
+* agent-shell / dsh 会话记录（顺带记一下）
+
+- =agent-shell= 把完整 transcript（含 thinking、tool calls）实时写到
+  *项目根* =.agent-shell/transcripts/<启动时间>.md= 。在 Fisher 的这个仓库里就是
+  =/home/Topaz/nixos-config/.agent-shell/transcripts/= 。
+- =dsh= 侧原始会话在
+  =~/.dsh/sessions/--home-Topaz-nixos-config--/<session-id>/
+  session.v4.jsonl.zstd= 。
+- 关键会话 ID：=eef8183b-9ff5-466e-959b-a73ec3a278c5=
+  （GDM→tuigreet 讨论 + tuigreet 调试都在这个 session 里，跨 agent-shell 重启续接）。
+- 想让 agent-shell 每次自动续最近的会话：
+  #+begin_src elisp
+  (setq agent-shell-session-strategy 'latest)
+  #+end_src
+  （取值 =new= / =latest= / =prompt= ，默认 =prompt= 。dsh 的 ACP 支持
+  =session/list= 和 =session/load= 。）
+- 手动：=M-x agent-shell-resume-session= 、=agent-shell-copy-session-id= 、
+  =agent-shell-open-transcript= 。
+- 注意 =.agent-shell/= 在 =.git/info/exclude= 里（仅本地忽略），=~/.dsh= 也在本地，
+  换机器就没了。所以结论要写进本文件这种随仓库走的地方。
+
+* 相关文件
+
+- =hosts/fisher/configuration.nix= —— 关掉 GDM
+- =modules/nixos/desktop.nix= —— greetd + tuigreet 配置
+- =modules/nixos/desktop/security.nix= —— greetd 的 PAM gnome-keyring
+- =home/linux/gui/niri/default.nix= —— niri home 配置（=.wayland-session= 已注释）
+- =outputs/x86_64-linux/src/fisher.nix= —— Fisher 唯一的构建入口
+- =justfile= / =utils.nu= —— =just local= 等命令
