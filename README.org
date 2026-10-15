@@ -3,16 +3,16 @@
 This is my first try to learn NixOS and build my own configuration block by block. Most of them are copied from ryan4yin's.
 
 ** TODOs
-1. encryption
-2. syncthing
-3. custom alias.
-4. live iso
-5. wifi
-6. fcitx5 refresh and sync.
+1. syncthing
+2. custom alias.
+3. live iso
+4. wifi
+5. fcitx5 refresh and sync.
 ** BUGs
 1. there is a vsock bug of systemd on Hyper-V. This will be solved in v360 in the future.`
    But I will not use NixOS in Hyper-V later.
 ** Notes
 - [[file:docs/agent-notes.org][Agent Notes]]：greetd/tuigreet 决策与踩坑记录，给未来的 agent 会话看。
+- fc95a997-299b-46ef-bc9d-75d4101d592a
 
 
