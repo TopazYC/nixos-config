@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.home.module.lean;
+  cfg = config.home.modules.lean;
 in
 {
   options.home.modules.lean = {

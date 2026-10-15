@@ -23,6 +23,7 @@ in
 
   modules.desktop.gaming.enable = true;
   modules.desktop.niri.enable = true;
+  modules.desktop.office.enable = true;
 
   # PC: keep the screen on longer than on the laptop.
   #  modules.desktop.hypridle = {

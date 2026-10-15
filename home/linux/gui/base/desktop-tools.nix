@@ -10,7 +10,12 @@
     # misc
     "_JAVA_AWT_WM_NONREPARENTING" = "1";
     "QT_WAYLAND_DISABLE_WINDOWDECORATION" = "1";
-    "SDL_VIDEODRIVER" = "wayland";
+    # NOTE: do NOT force SDL_VIDEODRIVER=wayland globally. Several native
+    # Linux games ship their own SDL2 built WITHOUT the Wayland backend
+    # (e.g. Don't Starve Together's bin64/lib64/libSDL2-2.0.so.0 has zero
+    # wayland symbols). Forcing wayland makes them abort at startup with:
+    #   Unable to initialize SDL: wayland,x11 not available
+    # Let SDL auto-detect, or override per game in Steam launch options.
     "GDK_BACKEND" = "wayland";
     "XDG_SESSION_TYPE" = "wayland";
   };

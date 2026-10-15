@@ -47,6 +47,10 @@
 
   networking.firewall = {
     enable = true;
+    allowedUDPPorts = [
+      38271
+      38272
+    ];
     # allowedTCPPorts = [ 3391 ];
   };
 
@@ -123,10 +127,11 @@
 
   #modules.desktop.wayland.enable = true;
 
-  ##  networking.firewall = {
+  ## networking.firewall = {
+
   ##    trustedInterfaces = [ "Mihomo" ];
   ##    extraReversePathFilterRules = ''
   ##      iifname { "Mihomo" } accept comment "trusted interface"
   ##    '';
-  ##  };
+  #};
 }

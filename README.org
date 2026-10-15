@@ -13,6 +13,9 @@ This is my first try to learn NixOS and build my own configuration block by bloc
    But I will not use NixOS in Hyper-V later.
 ** Notes
 - [[file:docs/agent-notes.org][Agent Notes]]：greetd/tuigreet 决策与踩坑记录，给未来的 agent 会话看。
+- [[file:docs/dst-server.org][DST 专用服务器 & SakuraFrp]]：饥荒开服、frpc 安装、systemd 按需服务、WiFi 策略路由。
 - fc95a997-299b-46ef-bc9d-75d4101d592a
+- DST
+97ac9006-2416-4fce-9df9-ebaa8cd5a612
 
 

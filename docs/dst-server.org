@@ -1,0 +1,747 @@
+#+title: 饥荒联机版专用服务器 & SakuraFrp 笔记
+#+subtitle: 存档位置、开服、frpc 安装、systemd 与 WiFi 策略路由
+#+date: 2026-10-15
+#+filetags: :dst:sakurafrp:nixos:network:
+#+startup: overview
+
+本文件把"在 Fisher 上开饥荒联机版（DST）专用服务器 + 用 SakuraFrp
+做内网穿透 + 让 frpc 单独走 WiFi"整条链路记录下来，包含踩过的坑和
+原理讲解，给未来的自己和 agent 会话看。
+
+Session ID: 97ac9006-2416-4fce-9df9-ebaa8cd5a612
+* 总览
+- 主机：*Fisher*（`outputs/x86_64-linux/src/fisher.nix`），单机部署。
+- 游戏：DST 原生 Linux 专用服务器（Steam app *343050*），不是 Proton。
+- 会话：niri（Wayland）+ Clash Verge（当前 TUN 关闭，7897 系统代理）；
+  Tailscale 已安装但处于 `Logged out`。
+- 双网：
+  | 连接                 | 设备               | 地址              | 网关          | metric |
+  |----------------------+--------------------+-------------------+---------------+--------|
+  | =Wired connection 1= | =enp4s0f3u1u2c2=   | 192.168.1.109/24  | 192.168.1.1   | 100    |
+  | =YCroaker的呆毛=     | =wlp1s0=           | 10.35.184.182/24  | 10.35.184.32  | 600    |
+- 问题背景：有线能出网，但连不上 SakuraFrp 节点（校园网侧限制/DNS 干扰）；
+  WiFi 能连。因此要让 frpc 的流量单独走 WiFi，同时有线继续服务局域网朋友。
+- 结论速记：
+  1. 服务器要借 Steam Linux Runtime 跑（缺 `libcurl-gnutls`，且 NixOS 没有
+     `/usr/bin/true`）；
+  2. 开服用 `~/Game/dst/run_shard.sh`，Master / Caves 各一个进程；
+  3. frpc 用自建 derivation 装，`frpc -f <访问密钥>:<隧道ID>` 启动；
+  4. 让 frpc 走 WiFi 有"改默认路由"和"策略路由"两类做法，见后文。
+
+* 名词与目录结构
+** DST 专用服务器安装目录
+#+begin_example
+~/.local/share/Steam/steamapps/common/Don't Starve Together Dedicated Server/
+├── bin64/dontstarve_dedicated_server_nullrenderer_x64   # 64 位，用这个
+├── bin64/lib64/{libSDL2,libsteam_api,libfmodex…}        # 自带依赖
+├── bin64/scripts/launch_dedicated_server.sh             # 官方脚本，依赖 xterm，别用
+├── bin/dontstarve_dedicated_server_nullrenderer          # 32 位
+└── data/                                                 # 引擎数据（Lua/资源）
+#+end_example
+
+=bin64= 是 64 位，=bin= 是 32 位，参数完全一样。*永远用 bin64。*
+
+** DST 客户端存档
+
+#+begin_example
+~/.klei/DoNotStarveTogether/<SteamID>/
+├── client.ini
+├── client_save/                 # 客户端本地数据
+└── CloudSaves/<cloud_id>/       # Steam 云存档的世界
+    ├── cluster.ini
+    ├── Master.zip               # 解出来就是 Master/ 内容
+    └── Caves.zip
+#+end_example
+
+** 服务器 cluster 目录
+
+当前实际位置：
+
+#+begin_example
+~/Game/dst/servers/JunXun/
+├── cluster.ini            # 全局：名字/密码/内部端口/主从
+├── cluster_token.txt      # Klei 账号页生成的服务器 token
+├── adminlist.txt
+├── Master/
+│   ├── server.ini         # 主世界对外端口，is_master = true
+│   ├── leveldataoverride.lua
+│   ├── modoverrides.lua
+│   └── save/              # 主世界存档
+└── Caves/
+    ├── server.ini         # 洞穴对外端口，is_master = false
+    ├── leveldataoverride.lua
+    ├── modoverrides.lua
+    └── save/
+#+end_example
+
+** 路径公式
+
+服务器用三个参数拼出 cluster 路径：
+
+#+begin_example
+-persistent_storage_root <ROOT> -conf_dir <CONF> -cluster <NAME>
+        →  <ROOT>/<CONF>/<NAME>/
+#+end_example
+
+- `-persistent_storage_root`：替代默认的 `~/.klei`。
+- `-conf_dir`：替代默认的 `DoNotStarveTogether`。
+- `-cluster`：集群名。
+
+本机是 `-persistent_storage_root ~/Game/dst -conf_dir servers -cluster JunXun`，
+所以路径是 `~/Game/dst/servers/JunXun/`。*路径对不上最典型的报错就是
+`Token file not found ...`。*
+
+* 开服
+
+** 0. cluster_token.txt
+
+去 <https://accounts.klei.com/account/game/servers?game=DontStarveTogether>
+添加服务器，把 token 粘进 `cluster.ini` 同目录的 `cluster_token.txt`：
+
+#+begin_src bash
+echo 'pds-g^KU_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx==' > ~/Game/dst/servers/JunXun/cluster_token.txt
+#+end_src
+
+`offline_cluster = true` 或纯 LAN 才不需要 token。长度是 62 字节左右。
+
+** 1. 迁移旧存档
+
+*** 情况 A：Windows 专用服务器留下的整个 cluster 文件夹
+
+一般在 `%USERPROFILE%\Documents\Klei\DoNotStarveTogether\Cluster_X`。
+整个拷到 `~/Game/dst/servers/<新名字>/`，保持 `cluster.ini / Master / Caves`
+结构即可。
+
+*** 情况 B：只有客户端的世界（Steam 云存档 zip）
+
+云存档目录里的 `Master.zip` / `Caves.zip` 内部正好就是 shard 内容
+（`save/`、`server.ini`、`leveldataoverride.lua`、`modoverrides.lua`）：
+
+#+begin_src bash
+CL="$HOME/Game/dst/servers/JunXun"
+Z="$HOME/.klei/DoNotStarveTogether/<SteamID>/CloudSaves/<cloud_id>"
+mkdir -p "$CL/Master" "$CL/Caves"
+unzip -o "$Z/Master.zip" -d "$CL/Master"
+unzip -o "$Z/Caves.zip"  -d "$CL/Caves"
+cp "$Z/cluster.ini" "$CL/cluster.ini"
+#+end_src
+
+迁完记得重新生成 `cluster_token.txt`，并删掉 `cluster.ini` 里的
+`cluster_cloud_id`（那是客户端云存档字段）。
+
+** 2. cluster.ini
+
+#+begin_src ini
+[GAMEPLAY]
+game_mode = survival
+max_players = 6
+pvp = false
+pause_when_empty = true
+
+[NETWORK]
+cluster_name = 军训
+cluster_description =
+cluster_password = 13579
+cluster_language = zh
+lan_only_cluster = false
+offline_cluster = false
+
+[MISC]
+console_enabled = true
+
+[SHARD]
+shard_enabled = true
+bind_ip = 127.0.0.1
+master_ip = 127.0.0.1
+master_port = 10090
+cluster_key = defaultPass
+#+end_src
+
+- `master_port`：Master 与 Caves 之间的*内部*通信端口，绑在 `127.0.0.1`，
+  不用对公网开放。
+- `cluster_key`：两个 shard 的握手口令，两个进程读同一个 `cluster.ini`，天然一致。
+- `shard_enabled = true` 才会启用洞穴分片。
+
+** 3. Master / Caves 的 server.ini 与端口
+
+*对外端口写在各自 shard 的 server.ini 里*：
+
+#+begin_src ini
+# Master/server.ini
+[NETWORK]
+server_port = 38271
+
+[SHARD]
+is_master = true
+
+[ACCOUNT]
+encode_user_path = true
+#+end_src
+
+#+begin_src ini
+# Caves/server.ini
+[NETWORK]
+server_port = 38272
+
+[SHARD]
+is_master = false
+name = Caves
+
+[STEAM]
+master_server_port = 27017
+authentication_port = 8767
+
+[ACCOUNT]
+encode_user_path = true
+#+end_src
+
+要点：
+- `server_port`（UDP）是玩家连进来的游戏端口，Master / Caves 必须不同。
+- `[SHARD] is_master` 是区分主/洞的开关。
+- `master_server_port` / `authentication_port` 是 Steam 查询/认证端口；
+  不写会自动分配，写了就固定，两个 shard 不能撞。
+
+** 4. 防火墙
+
+NixOS 声明式放行 UDP（可用端口见 shard 配置）：
+
+#+begin_src nix
+networking.firewall.allowedUDPPorts = [ 38271 38272 ];
+#+end_src
+
+- 同网段（192.168.1.0/24）的局域网朋友只需主机放行，不必动路由器。
+- 公网直连才需要在路由器做 UDP 端口映射；校园网通常没公网 IP，走 frp。
+- frpc 是*主动出站*，不需要在防火墙上开任何入站端口。
+
+** 5. 启动脚本 ~/Game/dst/run_shard.sh
+
+当前脚本（已可用）：
+
+#+begin_src bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+STEAM="$HOME/.local/share/Steam"
+SERVER="$STEAM/steamapps/common/Don't Starve Together Dedicated Server"
+SOLDIER="$STEAM/steamapps/common/SteamLinuxRuntime_soldier"
+SCOUT="$STEAM/steamapps/common/SteamLinuxRuntime"
+BIN="$SERVER/bin64/dontstarve_dedicated_server_nullrenderer_x64"
+
+STORAGE_ROOT="${DST_ROOT:-$HOME/Game/dst}"
+CONF_DIR="${DST_CONF_DIR:-servers}"
+CLUSTER="${1:?用法: run_shard.sh <集群名> <Master|Caves>}"
+SHARD="${2:?}"
+
+export SteamAppId=343050 SteamGameId=343050
+
+cd "$SERVER/bin64"
+
+exec steam-run "$SOLDIER/_v2-entry-point" --verb=waitforexitandrun -- \
+  "$SCOUT/scout-on-soldier-entry-point-v2" -- \
+  "$BIN" \
+    -persistent_storage_root "$STORAGE_ROOT" \
+    -conf_dir "$CONF_DIR" \
+    -cluster "$CLUSTER" \
+    -shard "$SHARD"
+#+end_src
+
+*** 逐行解释
+
+- `set -euo pipefail`：出错即停、未定义变量报错、管道失败也算失败。
+- `SERVER`：服务器安装目录；`BIN` 是 64 位主程序。
+- `SOLDIER` / `SCOUT`：Steam Linux Runtime 的两层。游戏需要容器里的
+  `libcurl-gnutls.so.4` 等库。
+- `cd "$SERVER/bin64"`：*关键*。引擎内部会 `chdir("../data")`，
+  只有当工作目录是 `bin64/` 时，`../data` 才指向安装目录的 `data/`。
+  否则会报 `failed to change working directory to ../data` 并加载不到 Lua。
+- `steam-run ...`：*关键*。先进入 Steam 的 FHS 环境，那里有
+  `/usr/bin/true`；pressure-vessel 启动前要用 bwrap 跑 `true` 做冒烟测试，
+  NixOS 主机本身没有 `/usr/bin/true`，不套这层就会
+  `bwrap: execvp true: No such file or directory`。
+- `_v2-entry-point --verb=waitforexitandrun -- scout-on-soldier-entry-point-v2 --`：
+  和 Steam 启动原生游戏时完全相同的链：host → soldier → scout → 游戏。
+- `-persistent_storage_root / -conf_dir / -cluster / -shard`：见路径公式。
+
+用法（Master / Caves 各开一个终端，或塞进 zellij）：
+
+#+begin_src bash
+chmod +x ~/Game/dst/run_shard.sh
+~/Game/dst/run_shard.sh JunXun Master
+~/Game/dst/run_shard.sh JunXun Caves
+#+end_src
+
+> 本机没装 `screen`/`tmux`，但有 `zellij`；`zellij -s dst` 开两个 pane 即可。
+
+** 6. 64 位 vs 32 位
+
+| | 64 位 | 32 位 |
+|---|---|---|
+| 二进制 | =bin64/dontstarve_dedicated_server_nullrenderer_x64= | =bin/dontstarve_dedicated_server_nullrenderer= |
+| 开法 | 参数完全一样 | 参数完全一样，只换路径 |
+| 内存 | 可用 >4GB | 约 4GB 地址空间上限 |
+| 适用 | 推荐；mod 多/长期世界必须 | 只适合老 32 位环境 |
+
+官方两个 `launch_dedicated_server.sh` 除了二进制路径外一模一样，而且都依赖
+`xterm`（本机没装），不要用。*结论：永远用 `bin64`。*
+
+** 7. 验证
+
+成功时日志里会看到：
+- `SteamGameServer_Init success`；
+- `Token file not found` 不再出现；
+- 监听端口是你 `server.ini` 里写的值（如 38271），而不是 fallback 的 10999；
+- Master 起来后再起 Caves，Caves 会自动连 `127.0.0.1:10090`。
+
+* 踩坑记录
+
+** 客户端启动失败：Unable to initialize SDL: wayland,x11 not available
+
+- 现象：DST 客户端启动约 2 秒即退出，`console-linux.txt`：
+  #+begin_example
+  [00:00:00]: WindowManager::Initialize
+  [00:00:00]: Unable to initialize SDL: wayland,x11 not available
+  [00:00:00]: Error during initialization!
+  [00:00:00]: Assert failure 'BREAKPT:' at ../source/dontstarve/application.cpp(1896)
+  #+end_example
+- 原因：`home/linux/gui/base/desktop-tools.nix` 里全局设了
+  =SDL_VIDEODRIVER = "wayland"=，而 DST 自带的
+  =bin64/lib64/libSDL2-2.0.so.0= *只编译了 X11 后端*（wayland 相关字符串为 0）。
+- 修复：删掉全局 `SDL_VIDEODRIVER`，让 SDL 自己探测；或对单个游戏在
+  Steam 启动项写 `SDL_VIDEODRIVER=x11 %command%`。
+
+** 服务器起不来：bwrap: execvp true: No such file or directory
+
+- 现象：`pressure-vessel-wrap[...]: E: Child process exited with code 1:
+  bwrap: execvp true: No such file or directory`。
+- 原因：`pressure-vessel` 用 bwrap 跑 `true` 做沙箱冒烟测试，而 NixOS 主机的
+  =/bin= 只有 =sh=、=/usr/bin= 只有 =env=，没有 `true`。Steam 平时运行在它自己的
+  FHS 里，所以不会遇到。
+- 修复：用 `steam-run` 包一层（`steam-run` 的 FHS 里有 `/usr/bin/true`）。
+
+** failed to change working directory to ../data
+
+- 原因：工作目录不对。引擎按 CWD 解析 `../data`。
+- 修复：启动前 `cd "$SERVER/bin64"`。
+
+** Token file not found
+
+- 现象：日志 `Token file not found: /home/Topaz/Game//servers/JunXun/cluster_token.txt`。
+- 原因：`-conf_dir` 与实际目录不一致。当时 token 在
+  `~/Game/dst/servers/JunXun`，参数却指向 `~/Game/servers/JunXun`。
+- 修复：让三参数拼出的路径与真实目录一致。
+
+** Steam「浏览本地文件」没反应
+
+- 原因：Steam 调 `xdg-open <目录>`，配置把 `inode/directory` 映射到
+  `yazi.desktop`（终端文件管理器），实际启动 `alacritty -e yazi <目录>`；
+  而 niri 的 `windowrules.kdl` 把 `app-id="Alacritty"` 的窗口
+  `open-on-workspace "1terminal"`，于是窗口全被丢到 workspace 1，看起来没反应。
+- 症状佐证：`niri msg --json windows` 里堆了 20+ 个
+  `Yazi: Don't Starve Together Dedicated Server` 窗口。
+- 处理：切到 workspace 1 查看/清理，或按需改 `mimeapps.list` / 窗口规则。
+- 清理示例：
+  #+begin_src bash
+  pkill -f "alacritty -e yazi .*Don't Starve Together Dedicated Server"
+  #+end_src
+
+** frpc: Bad fetch parameter
+
+见下面「命令行用法与错误对照」。
+
+* SakuraFrp (frpc)
+
+** 安装：NixOS derivation
+
+nixpkgs 没有樱花客户端（只有原生 =frp=），所以自己包官方静态二进制。
+现有模块 =modules/nixos/desktop/networking/sakurafrp.nix=：
+
+#+begin_src nix
+{ config, lib, pkgs, ... }:
+let
+  frpc = pkgs.stdenvNoCC.mkDerivation {
+    pname = "sakurafrp-frpc";
+    version = "0.51.0-sakura-15";
+    src = pkgs.fetchurl {
+      url = "https://nya.globalslb.net/natfrp/client/frpc/0.51.0-sakura-15/frpc_linux_amd64";
+      hash = "sha256-UsGlPnY/F9M/GzRmHkKDvGdJeXdLRY9VaOmXOtHmipk=";
+    };
+    dontUnpack = true;                       # 裸二进制
+    installPhase = "install -Dm755 $src $out/bin/frpc";
+  };
+in
+{
+  environment.systemPackages = [ frpc ];
+}
+#+end_src
+
+- 升级：改 `version`、`url`、`hash`。取 hash 用
+  =nix store prefetch-file <url>=。
+- 这是 Go 静态二进制，不需要 `autoPatchelfHook`；动态链接的话再加
+  =autoPatchelfHook= + `glibc`/`stdenv.cc.cc.lib`，或靠已有的
+  =programs.nix-ld=。
+
+** 访问密钥与隧道
+
+- *没有账号密码登录*。CLI 的"登录"就是访问密钥（token）。
+- 密钥在网页端：登录 <https://www.natfrp.com/> → 用户中心 → *访问密钥*。
+  *固定 16 位*（见下）。
+- 隧道在网页端建：隧道 → 新建 → 节点要支持 *UDP* → 类型 *UDP* →
+  本地 `127.0.0.1:38271` / `38272` → 远程端口（系统分配或自填）。
+- 记下每条隧道的 *隧道 ID*、*节点地址*、*远程端口*。
+
+** 命令行用法与错误对照
+
+#+begin_src bash
+# 启动该密钥下的所有隧道（如果版本支持省略 id）
+frpc -f <访问密钥>
+
+# 推荐写法：token:tunnelid（多条用逗号）
+frpc -f <访问密钥>:<隧道ID1>,<隧道ID2> -n --disable_log_color
+#+end_src
+
+- `-n` 跳过启动时的更新检查。
+- `--disable_log_color` 关彩色。
+- `-w` 把拉取到的配置写到 `frpc.ini`，调试用。
+- `--proxy http://127.0.0.1:7897` 让*登录/API*连走本机 Clash。
+
+错误对照表（实测）：
+
+| 报错 | 原因 |
+|---|---|
+| =Bad fetch parameter= | `-f` 参数里没有冒号（没写 `:<隧道ID>`） |
+| =访问密钥长度错误= | 密钥少于 16 位，没复制全 |
+| =访问密钥输入有误, 请尝试直接复制= | 密钥多于 16 位，多复制了字符/空格 |
+| =[401] 访问密钥无效= | 长度对了，但密钥错误/过期 |
+
+** 方案一：不写成服务（临时前台跑）
+
+#+begin_src bash
+cd /tmp
+sudo -u nobody env HOME=/tmp /run/current-system/sw/bin/frpc \
+  -f '<访问密钥>:<隧道ID>' -n --disable_log_color
+#+end_src
+
+临时验证用。日志里看到隧道启动成功（`start proxy success` 之类）即可，
+Ctrl+C 结束。配合后文的 WiFi 策略路由使用。
+
+** 方案二：systemd 服务（默认关闭、按需启停、sops 管密钥）
+
+需求：不开机自启，但可以随时 =systemctl start/stop=；访问密钥走 sops，
+不落到 world-readable 的 Nix store。
+
+#+begin_src nix
+{ config, lib, pkgs, ... }:
+let
+  frpc = /* 见上面 derivation */;
+in
+{
+  systemd.services.sakura-frp = {
+    description = "SakuraFrp frpc client (on-demand)";
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    # 关键：故意不写 wantedBy，所以默认不开机自启
+    serviceConfig = {
+      ExecStart = "${pkgs.writeShellScript "sakura-frp-start" ''
+        exec ${frpc}/bin/frpc \
+          -f "$(cat ${config.sops.secrets.sakura_frp_key.path}):<隧道ID1>,<隧道ID2>" \
+          -n --disable_log_color
+      ''}";
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+  };
+}
+#+end_src
+
+sops 侧（=secrets/default.nix=）：
+
+#+begin_src nix
+sops.secrets."sakura_frp_key" = {
+  sopsFile = "${mysecrets}/secrets/fisher.yaml";
+  mode = "0400";
+};
+#+end_src
+
+然后在加密的 `fisher.yaml` 里加 `sakura_frp_key: <16位访问密钥>`。
+
+使用：
+
+#+begin_src bash
+sudo systemctl start  sakura-frp
+sudo systemctl stop   sakura-frp
+systemctl status      sakura-frp
+journalctl -u sakura-frp -f
+#+end_src
+
+注意事项：
+- 不写 `wantedBy` 就不会开机自启；NixOS 上不要依赖 `systemctl enable`
+  持久化，按需 `start` 即可。
+- 服务以 root 跑时，`mode = "0400"` 的 secret 可直接读；若改成专用用户跑
+  （见后文 WiFi 策略路由的 Nix 方案），要把 secret 的 `owner` 改成该用户，
+  或用 systemd `LoadCredential`。
+
+* 路由入门（为什么需要 ip rule / table）
+
+不熟路由表的话先看这节，再看后面的命令会顺很多。
+
+** 路由表（routing table）
+
+内核决定"这个包从哪个网卡、下一跳发给谁"，靠的是一张*路由表*。
+默认用的是 =main= 表（编号 254），`ip route` 看到的就是它：
+
+#+begin_example
+default via 192.168.1.1  dev enp4s0f3u1u2c2  metric 100
+default via 10.35.184.32 dev wlp1s0           metric 600
+192.168.1.0/24 dev enp4s0f3u1u2c2 ...
+#+end_example
+
+- `default` 是"兜底路由"，没更具体匹配时用它。
+- `metric` 越小越优先；所以现在默认走有线。
+- `via X` 是下一跳网关；`dev Y` 是从哪个接口出去。
+- 除 `main` 外还有 `local`(255)、`default`(253) 和自定义表（1–252）。
+
+** ip rule（策略路由）
+
+默认只查 `main` 一张表。*策略路由*允许"按条件选表"：
+
+#+begin_example
+ip rule add uidrange 65534-65534 lookup 100 priority 8000
+#+end_example
+
+- `uidrange A-B`：匹配"发出这个包的进程的 uid"。
+- `lookup 100`：命中后去查编号 100 的路由表。
+- `priority 8000`：规则优先级，*数字越小越先匹配*。
+  Clash Verge 的 TUN 规则是 9000+，所以我们用 8000 抢在它前面。
+
+** 一个包怎么选路（简化）
+
+1. 看源地址/目的地址/uid/fwmark 等，按 `ip rule` 从前往后匹配；
+2. 命中某条 rule 就查它指定的表；
+3. 在表里做最长前缀匹配，选中路由条目；
+4. 按条目决定从哪个 `dev` 出去、`via` 哪个网关。
+
+我们的目标就是：让 *frpc 这个进程* 的包命中"表 100"，而表 100 的默认路由是 WiFi。
+其它进程不命中，继续走 `main`（有线）。
+
+** 常用查看命令
+
+#+begin_src bash
+ip rule show                      # 所有策略规则
+ip route show table main          # 默认表
+ip route show table 100           # 自定义表
+ip route get 1.1.1.1              # 当前进程会怎么走
+ip route get 1.1.1.1 uid 65534    # 以 uid 65534 查会怎么走
+#+end_src
+
+* 让 frpc 走 WiFi
+
+背景：有线（192.168.1.1）连不上樱花节点，WiFi（10.35.184.32）可以。
+下面三种做法按"改动范围"从小到大排。
+
+** 方案 A：把 WiFi 设成默认出口（最省事）
+
+因为 `192.168.1.0/24` 是*直连路由*，换默认出口不会影响局域网朋友。
+
+#+begin_src bash
+nmcli connection modify "YCroaker的呆毛" ipv4.route-metric 50 ipv6.route-metric 50
+nmcli connection modify "Wired connection 1" ipv4.route-metric 600 ipv6.route-metric 600
+nmcli connection up "YCroaker的呆毛"
+
+ip route | grep default     # 确认 wlp1s0 的 metric 最小
+ip route get 1.1.1.1        # 应显示 dev wlp1s0
+#+end_src
+
+- 代价：*所有*出网都走 WiFi。
+- 恢复：`nmcli connection modify "YCroaker的呆毛" ipv4.route-metric -1`。
+- NetworkManager 会把 metric 存进连接配置，重启有效。
+
+** 方案 B1：临时用 nobody + 策略路由
+
+不动全局路由，只让 `nobody`（uid 65534）的流量走 WiFi，再把 frpc 用
+`nobody` 跑。思路就是前面"路由入门"那套。
+
+#+begin_src bash
+# 1) 取 WiFi 网关
+WG=$(nmcli -g IP4.GATEWAY device show wlp1s0)     # 10.35.184.32
+
+# 2) 建表 100：默认走 WiFi
+sudo ip route replace default via "$WG" dev wlp1s0 table 100
+
+# 3) uid 65534 的流量查表 100（priority 8000 抢在 Clash TUN 的 9000 前）
+sudo ip rule add uidrange 65534-65534 lookup 100 priority 8000
+
+# 4) 验证
+ip route get 1.1.1.1 uid 65534    # 应显示 dev wlp1s0
+ip route get 1.1.1.1              # 普通进程仍走有线
+
+# 5) 以 nobody 身份跑 frpc
+cd /tmp
+sudo -u nobody env HOME=/tmp /run/current-system/sw/bin/frpc \
+  -f '<访问密钥>:<隧道ID1>,<隧道ID2>' -n --disable_log_color
+#+end_src
+
+清理（重启也会自动消失）：
+
+#+begin_src bash
+sudo ip rule del uidrange 65534-65534 lookup 100 priority 8000
+sudo ip route flush table 100
+#+end_src
+
+验证 frpc 确实走了 WiFi：源地址应为 `10.35.184.182`。
+
+#+begin_src bash
+sudo ss -tnp | grep frpc              # 非 root 看不到别人进程名，要 sudo
+ss -tn | grep 10.35.184.182           # 或按源地址过滤，不需要 root
+#+end_src
+
+配套的 Nushell 脚本见 =~/Game/dst/frpc-wifi.nu=（可 setup/run/status/clean）。
+
+*** 命令逐条解释
+
+- `nmcli -g IP4.GATEWAY device show wlp1s0`：只取 WiFi 的网关地址。
+  动态取是因为 IP/网关会漂（本机 WiFi 就从 10.7.x 变成 10.35.x 过）。
+- `ip route replace default via <WG> dev wlp1s0 table 100`：
+  在自定义表 100 里写一条默认路由，下一跳是 WiFi 网关，出口是 `wlp1s0`。
+  `replace` 而非 `add`，重复执行不报错（幂等）。
+- `ip rule add uidrange 65534-65534 lookup 100 priority 8000`：
+  新增策略规则——"uid 在 65534~65534 的进程发的包，去查表 100"。
+  `priority 8000` 小于 Clash TUN 的 9000，所以优先命中。
+- `ip route get 1.1.1.1 uid 65534`：模拟"uid 65534 发往 1.1.1.1"的选路结果，
+  用来确认规则是否生效（看到 `dev wlp1s0` 就对了）。
+- `sudo -u nobody env HOME=/tmp <frpc> ...`：以 `nobody` 身份运行 frpc，
+  这样它的 uid 就是 65534，正好命中上面那条规则。`HOME=/tmp` 是因为
+  nobody 的家目录是 `/var/empty`，避免写文件权限问题。
+- `ip rule del ...` / `ip route flush table 100`：删除规则、清空自定义表。
+
+为什么用 `nobody`：NixOS 自带 uid 65534，不用新建用户；它平时不跑任何
+交互程序，把它的流量整体导到 WiFi 没有副作用。*不要*用你自己的账号
+（uid 1000），否则你整个桌面所有联网都会走 WiFi。
+
+** 方案 B2：写进 Nix（专用用户 + oneshot 路由服务）
+
+和 B1 同原理，只是持久化、声明式。给 frpc 一个专用 uid，用一个
+oneshot 服务在网络起来后铺好路由表 + ip rule。
+
+#+begin_src nix
+{ config, lib, pkgs, ... }:
+let
+  frpc = /* derivation */;
+  frpcUid = 993;
+in
+{
+  users.groups.sakurafrp = { };
+  users.users.sakurafrp = {
+    isSystemUser = true;
+    group = "sakurafrp";
+    uid = frpcUid;
+  };
+
+  systemd.services.sakura-frp = {
+    description = "SakuraFrp frpc client";
+    after = [ "network-online.target" "NetworkManager-wait-online.service" ];
+    wants = [ "network-online.target" ];
+    # 需要常驻就加 wantedBy；只想按需启动就留空
+    # wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      User = "sakurafrp";
+      ExecStart = "${pkgs.writeShellScript "sakura-frp-start" ''
+        exec ${frpc}/bin/frpc \
+          -f "$(cat ${config.sops.secrets.sakura_frp_key.path}):<隧道ID1>,<隧道ID2>" \
+          -n --disable_log_color
+      ''}";
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+  };
+
+  systemd.services.sakura-route = {
+    description = "Route sakurafrp traffic over Wi-Fi";
+    after = [ "NetworkManager-wait-online.service" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = { Type = "oneshot"; RemainAfterExit = true; };
+    path = [ pkgs.iproute2 pkgs.networkmanager ];
+    script = ''
+      WG=$(nmcli -g IP4.GATEWAY device show wlp1s0)
+      [ -n "$WG" ] || exit 1
+      ip route replace default via "$WG" dev wlp1s0 table 100
+      ip rule del uidrange ${toString frpcUid}-${toString frpcUid} lookup 100 priority 8000 2>/dev/null || true
+      ip rule add uidrange ${toString frpcUid}-${toString frpcUid} lookup 100 priority 8000
+    '';
+  };
+}
+#+end_src
+
+- 因为 frpc 换成了 `sakurafrp` 用户，sops secret 要么 `owner = "sakurafrp"`，
+  要么用 `LoadCredential`。
+- `sakura-route` 在每次开机/网络就绪后重铺规则；网关是动态取的，IP 漂了也不怕。
+- 不想要常驻就保持 `sakura-frp` 没有 `wantedBy`，用
+  `sudo systemctl start sakura-frp` 按需启动。
+
+** 备选：Tailscale
+
+本机 Tailscale 已安装（`services.tailscale`，防火墙
+`trustedInterfaces = [ "tailscale0" ]`），只是 `Logged out`。
+`sudo tailscale up` 后让朋友加入 tailnet，直连 `100.x.y.z:38271`，
+可一次性绕开校园网、DNS 干扰，主世界和洞穴也在同一个 IP 上。
+比 frp 更省心，代价是朋友要装 Tailscale。
+
+* 速查
+
+** 开服
+
+#+begin_src bash
+~/Game/dst/run_shard.sh JunXun Master
+~/Game/dst/run_shard.sh JunXun Caves
+#+end_src
+
+** frpc
+
+#+begin_src bash
+# 临时前台
+cd /tmp
+sudo -u nobody env HOME=/tmp /run/current-system/sw/bin/frpc \
+  -f '<访问密钥>:<隧道ID>' -n --disable_log_color
+
+# 按需 systemd
+sudo systemctl start sakura-frp
+journalctl -u sakura-frp -f
+#+end_src
+
+** WiFi 策略路由（临时）
+
+#+begin_src bash
+WG=$(nmcli -g IP4.GATEWAY device show wlp1s0)
+sudo ip route replace default via "$WG" dev wlp1s0 table 100
+sudo ip rule add uidrange 65534-65534 lookup 100 priority 8000
+ip route get 1.1.1.1 uid 65534
+# 清理
+sudo ip rule del uidrange 65534-65534 lookup 100 priority 8000
+sudo ip route flush table 100
+#+end_src
+
+** Nushell 版（临时）
+
+#+begin_src nu
+let wg = (nmcli -g IP4.GATEWAY device show wlp1s0 | str trim)
+sudo ip route replace default via $wg dev wlp1s0 table 100
+sudo ip rule add uidrange '65534-65534' lookup 100 priority 8000
+ip route get '1.1.1.1' uid 65534
+#+end_src
+
+* 相关文件
+
+- =~/Game/dst/run_shard.sh=：开服脚本。
+- =~/Game/dst/frpc-wifi.nu=：nobody + WiFi 策略路由的 Nushell 脚本。
+- =modules/nixos/desktop/networking/sakurafrp.nix=：frpc 包与（可选）服务。
+- =home/linux/gui/base/desktop-tools.nix=：曾因全局 `SDL_VIDEODRIVER` 引发客户端崩溃。
+- =home/linux/gui/base/xdg/mime.nix=：`inode/directory` 的默认处理程序。
+- =home/linux/gui/niri/conf/windowrules.kdl=：Alacritty → workspace 1 的规则。
+
+* 参考
+
+- frpc 基本使用指南：<https://doc.natfrp.com/frpc/usage.html>
+- frpc 用户手册：<https://doc.natfrp.com/frpc/manual.html>
+- systemd 配置 frpc 服务：<https://doc.natfrp.com/frpc/service/systemd.html>
+- 饥荒联机版联机补充说明：<https://doc.natfrp.com/game/dst.html>
+- Klei 服务器 token 页：<https://accounts.klei.com/account/game/servers?game=DontStarveTogether>
