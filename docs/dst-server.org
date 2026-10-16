@@ -40,9 +40,7 @@ Session ID: 97ac9006-2416-4fce-9df9-ebaa8cd5a612
 #+end_example
 
 =bin64= 是 64 位，=bin= 是 32 位，参数完全一样。*永远用 bin64。*
-
 ** DST 客户端存档
-
 #+begin_example
 ~/.klei/DoNotStarveTogether/<SteamID>/
 ├── client.ini
@@ -52,11 +50,8 @@ Session ID: 97ac9006-2416-4fce-9df9-ebaa8cd5a612
     ├── Master.zip               # 解出来就是 Master/ 内容
     └── Caves.zip
 #+end_example
-
 ** 服务器 cluster 目录
-
 当前实际位置：
-
 #+begin_example
 ~/Game/dst/servers/JunXun/
 ├── cluster.ini            # 全局：名字/密码/内部端口/主从
@@ -73,47 +68,38 @@ Session ID: 97ac9006-2416-4fce-9df9-ebaa8cd5a612
     ├── modoverrides.lua
     └── save/
 #+end_example
-
 ** 路径公式
-
 服务器用三个参数拼出 cluster 路径：
-
 #+begin_example
 -persistent_storage_root <ROOT> -conf_dir <CONF> -cluster <NAME>
         →  <ROOT>/<CONF>/<NAME>/
 #+end_example
-
 - `-persistent_storage_root`：替代默认的 `~/.klei`。
 - `-conf_dir`：替代默认的 `DoNotStarveTogether`。
 - `-cluster`：集群名。
-
 本机是 `-persistent_storage_root ~/Game/dst -conf_dir servers -cluster JunXun`，
 所以路径是 `~/Game/dst/servers/JunXun/`。*路径对不上最典型的报错就是
 `Token file not found ...`。*
 
 * 开服
-
 ** 0. cluster_token.txt
-
 去 <https://accounts.klei.com/account/game/servers?game=DontStarveTogether>
 添加服务器，把 token 粘进 `cluster.ini` 同目录的 `cluster_token.txt`：
-
 #+begin_src bash
 echo 'pds-g^KU_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx==' > ~/Game/dst/servers/JunXun/cluster_token.txt
 #+end_src
 
+Nushell：
+#+begin_src nu
+'pds-g^KU_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx==' | save -f $"($env.HOME)/Game/dst/servers/JunXun/cluster_token.txt"
+#+end_src
 `offline_cluster = true` 或纯 LAN 才不需要 token。长度是 62 字节左右。
-
 ** 1. 迁移旧存档
-
 *** 情况 A：Windows 专用服务器留下的整个 cluster 文件夹
-
 一般在 `%USERPROFILE%\Documents\Klei\DoNotStarveTogether\Cluster_X`。
 整个拷到 `~/Game/dst/servers/<新名字>/`，保持 `cluster.ini / Master / Caves`
 结构即可。
-
 *** 情况 B：只有客户端的世界（Steam 云存档 zip）
-
 云存档目录里的 `Master.zip` / `Caves.zip` 内部正好就是 shard 内容
 （`save/`、`server.ini`、`leveldataoverride.lua`、`modoverrides.lua`）：
 
@@ -126,11 +112,18 @@ unzip -o "$Z/Caves.zip"  -d "$CL/Caves"
 cp "$Z/cluster.ini" "$CL/cluster.ini"
 #+end_src
 
+Nushell（~ 不展开，用 $env.HOME 拼；mkdir 默认就建父目录）：
+#+begin_src nu
+let cl = $"($env.HOME)/Game/dst/servers/JunXun"
+let z  = $"($env.HOME)/.klei/DoNotStarveTogether/<SteamID>/CloudSaves/<cloud_id>"
+mkdir $"($cl)/Master" $"($cl)/Caves"
+unzip -o $"($z)/Master.zip" -d $"($cl)/Master"
+unzip -o $"($z)/Caves.zip"  -d $"($cl)/Caves"
+cp $"($z)/cluster.ini" $"($cl)/cluster.ini"
+#+end_src
 迁完记得重新生成 `cluster_token.txt`，并删掉 `cluster.ini` 里的
 `cluster_cloud_id`（那是客户端云存档字段）。
-
 ** 2. cluster.ini
-
 #+begin_src ini
 [GAMEPLAY]
 game_mode = survival
@@ -161,9 +154,7 @@ cluster_key = defaultPass
   不用对公网开放。
 - `cluster_key`：两个 shard 的握手口令，两个进程读同一个 `cluster.ini`，天然一致。
 - `shard_enabled = true` 才会启用洞穴分片。
-
 ** 3. Master / Caves 的 server.ini 与端口
-
 *对外端口写在各自 shard 的 server.ini 里*：
 
 #+begin_src ini
@@ -200,23 +191,17 @@ encode_user_path = true
 - `[SHARD] is_master` 是区分主/洞的开关。
 - `master_server_port` / `authentication_port` 是 Steam 查询/认证端口；
   不写会自动分配，写了就固定，两个 shard 不能撞。
-
 ** 4. 防火墙
-
 NixOS 声明式放行 UDP（可用端口见 shard 配置）：
 
 #+begin_src nix
 networking.firewall.allowedUDPPorts = [ 38271 38272 ];
 #+end_src
-
 - 同网段（192.168.1.0/24）的局域网朋友只需主机放行，不必动路由器。
 - 公网直连才需要在路由器做 UDP 端口映射；校园网通常没公网 IP，走 frp。
 - frpc 是*主动出站*，不需要在防火墙上开任何入站端口。
-
 ** 5. 启动脚本 ~/Game/dst/run_shard.sh
-
 当前脚本（已可用）：
-
 #+begin_src bash
 #!/usr/bin/env bash
 set -euo pipefail
@@ -232,8 +217,40 @@ CONF_DIR="${DST_CONF_DIR:-servers}"
 CLUSTER="${1:?用法: run_shard.sh <集群名> <Master|Caves>}"
 SHARD="${2:?}"
 
+CLUSTER_DIR="$STORAGE_ROOT/$CONF_DIR/$CLUSTER"
+SHARD_DIR="$CLUSTER_DIR/$SHARD"
+
+list_shards() {
+  find "$CLUSTER_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | sort | tr '\n' ' '
+}
+
+# ---- 防呆：分片名拼错时不要默默新建一个空世界 ----
+if [ ! -d "$CLUSTER_DIR" ]; then
+  echo "错误: 找不到集群目录 $CLUSTER_DIR" >&2
+  exit 1
+fi
+if [ ! -d "$SHARD_DIR" ]; then
+  echo "错误: 集群 '$CLUSTER' 下没有分片目录 '$SHARD'" >&2
+  echo "可用分片: $(list_shards)" >&2
+  exit 1
+fi
+if ! grep -q '\[SHARD\]' "$SHARD_DIR/server.ini" 2>/dev/null; then
+  echo "错误: $SHARD_DIR/server.ini 里没有 [SHARD] 段，看起来不是有效的分片。" >&2
+  echo "      常见原因：把分片名拼错了（例如 Caves 写成 Cave），" >&2
+  echo "      这样启动会悄悄新建一个空世界，而不是加载你的存档。" >&2
+  echo "可用分片: $(list_shards)" >&2
+  exit 1
+fi
+if ! grep -qE '^[[:space:]]*is_master[[:space:]]*=' "$SHARD_DIR/server.ini"; then
+  echo "错误: $SHARD_DIR/server.ini 里缺少 is_master 字段" >&2
+  exit 1
+fi
+
 export SteamAppId=343050 SteamGameId=343050
 
+# 1) steam-run：提供 /usr/bin/true，pressure-vessel 的 bwrap 冒烟测试才能过
+# 2) cd bin64：让游戏内部的 ../data 指向安装目录的 data/，否则加载不到 Lua
+# 3) 运行时容器提供 libcurl-gnutls.so.4
 cd "$SERVER/bin64"
 
 exec steam-run "$SOLDIER/_v2-entry-point" --verb=waitforexitandrun -- \
@@ -242,11 +259,10 @@ exec steam-run "$SOLDIER/_v2-entry-point" --verb=waitforexitandrun -- \
     -persistent_storage_root "$STORAGE_ROOT" \
     -conf_dir "$CONF_DIR" \
     -cluster "$CLUSTER" \
+    -console \
     -shard "$SHARD"
 #+end_src
-
 *** 逐行解释
-
 - `set -euo pipefail`：出错即停、未定义变量报错、管道失败也算失败。
 - `SERVER`：服务器安装目录；`BIN` 是 64 位主程序。
 - `SOLDIER` / `SCOUT`：Steam Linux Runtime 的两层。游戏需要容器里的
@@ -260,7 +276,12 @@ exec steam-run "$SOLDIER/_v2-entry-point" --verb=waitforexitandrun -- \
   `bwrap: execvp true: No such file or directory`。
 - `_v2-entry-point --verb=waitforexitandrun -- scout-on-soldier-entry-point-v2 --`：
   和 Steam 启动原生游戏时完全相同的链：host → soldier → scout → 游戏。
+- `-console`：开启 stdin 控制台，可以在终端里直接敲 `c_shutdown()` 优雅关服。
+  它仍会提示 deprecated（改用 `cluster.ini` 的 `[MISC]/console_enabled`），忽略即可；
+  实测只设 `console_enabled = true` 时 stdin 不一定被读取，所以保留这个 flag。
 - `-persistent_storage_root / -conf_dir / -cluster / -shard`：见路径公式。
+- 开头的 *防呆* 块：分片目录不存在、或 `server.ini` 里没有 `[SHARD]` / `is_master`
+  就直接报错并列出可用分片，避免把 `Caves` 拼成 `Cave` 时默默新建一个空世界。
 
 用法（Master / Caves 各开一个终端，或塞进 zellij）：
 
@@ -270,7 +291,92 @@ chmod +x ~/Game/dst/run_shard.sh
 ~/Game/dst/run_shard.sh JunXun Caves
 #+end_src
 
+Nushell（外部命令的 ~ 不会自动展开；变量当命令要加 =^=）：
+#+begin_src nu
+let sh = $"($env.HOME)/Game/dst/run_shard.sh"
+chmod +x $sh
+^$sh JunXun Master
+^$sh JunXun Caves
+#+end_src
+
 > 本机没装 `screen`/`tmux`，但有 `zellij`；`zellij -s dst` 开两个 pane 即可。
+
+*** Nushell 版 run_shard.nu
+
+同一件事的 Nushell 实现，放在 =~/Game/dst/run_shard.nu=，用
+=nu run_shard.nu JunXun Master= 跑（防呆逻辑与 bash 版一致，两个报错分支已实测）：
+
+#+begin_src nu
+#!/usr/bin/env nu
+# run_shard.nu — run_shard.sh 的 Nushell 版
+# 用法: nu run_shard.nu <集群名> <Master|Caves>
+
+def main [cluster: string, shard: string] {
+    let home    = $env.HOME
+    let steam   = $"($home)/.local/share/Steam"
+    let server  = $"($steam)/steamapps/common/Don't Starve Together Dedicated Server"
+    let soldier = $"($steam)/steamapps/common/SteamLinuxRuntime_soldier"
+    let scout   = $"($steam)/steamapps/common/SteamLinuxRuntime"
+    let bin     = $"($server)/bin64/dontstarve_dedicated_server_nullrenderer_x64"
+
+    let storage_root = ($env.DST_ROOT? | default $"($home)/Game/dst")
+    let conf_dir     = ($env.DST_CONF_DIR? | default "servers")
+    let cluster_dir  = $"($storage_root)/($conf_dir)/($cluster)"
+    let shard_dir    = $"($cluster_dir)/($shard)"
+
+    # ---- 防呆 ----
+    if not ($cluster_dir | path exists) {
+        error make { msg: $"找不到集群目录 ($cluster_dir)" }
+    }
+    let available = (
+        ls $cluster_dir
+        | where type == dir
+        | get name
+        | each {|p| $p | path basename }
+        | str join ' '
+    )
+    if not ($shard_dir | path exists) {
+        error make { msg: $"集群 ($cluster) 下没有分片目录 ($shard)；可用: ($available)" }
+    }
+    let ini = ($shard_dir | path join "server.ini")
+    if not ($ini | path exists) {
+        error make { msg: $"缺少 ($ini)" }
+    }
+    let content = (open $ini)
+    if not ($content | str contains '[SHARD]') {
+        error make { msg: $"($ini) 里没有 [SHARD] 段（Caves 拼成 Cave？）；可用: ($available)" }
+    }
+    if not ($content | str contains 'is_master') {
+        error make { msg: $"($ini) 里缺少 is_master" }
+    }
+
+    $env.SteamAppId  = "343050"
+    $env.SteamGameId = "343050"
+
+    # 引擎按 CWD 解析 ../data，必须是 bin64/
+    cd $"($server)/bin64"
+
+    let args = [
+        $"($soldier)/_v2-entry-point" "--verb=waitforexitandrun" "--"
+        $"($scout)/scout-on-soldier-entry-point-v2" "--"
+        $bin
+        "-persistent_storage_root" $storage_root
+        "-conf_dir" $conf_dir
+        "-cluster" $cluster
+        "-console"
+        "-shard" $shard
+    ]
+    run-external "steam-run" ...$args
+}
+#+end_src
+
+对照点：
+- =X=...= / =$X= → =let x = ...= / =$x=
+- =$(...)= → =(...)=
+- =[ -d p ]= → =(p | path exists)=
+- =grep -q ...= → =($s | str contains ...)=
+- =$HOME= → =$env.HOME=；可能没定义的用 =($env.DST_ROOT? | default ...)=
+- 最后用 =run-external "steam-run" ...$args= 展开参数列表，省掉 bash 那堆反斜杠续行。
 
 ** 6. 64 位 vs 32 位
 
@@ -330,8 +436,24 @@ chmod +x ~/Game/dst/run_shard.sh
   `~/Game/dst/servers/JunXun`，参数却指向 `~/Game/servers/JunXun`。
 - 修复：让三参数拼出的路径与真实目录一致。
 
-** Steam「浏览本地文件」没反应
+** 分片名拼错：Caves 写成 Cave，默默新建空世界
 
+- 现象：`./run_shard.sh JunXun Cave` 之后，`~/Game/dst/servers/JunXun/`
+  下多了一个 `Cave/`；日志里出现：
+  #+begin_example
+  [Shard] Shard server mode disabled: missing is_master setting.
+  [Shard] Missing 'is_master' config field.
+  Skipping portal[1] (no available shard [Caves] connected)
+  #+end_example
+- 原因：`-shard` 的名字必须和目录名完全一致。目录不存在时服务器会*
+  自动新建*一个只含 `[ACCOUNT]` 的 `server.ini` 和一个空世界，且不报错。
+  于是真正的 `Caves/` 没被加载，Master 也找不到洞穴分片，洞穴入口被禁用。
+- 影响：真正的 `Caves/` 存档不会被动；但在那个空世界里的进度是无效的。
+- 修复：用 `Caves`（有 s）；确认 `Cave/` 是空世界后删掉。
+- 防呆：`run_shard.sh` 已内置检查——分片目录不存在、或 `server.ini`
+  缺 `[SHARD]` / `is_master` 就直接报错并列出可用分片。
+
+** Steam「浏览本地文件」没反应
 - 原因：Steam 调 `xdg-open <目录>`，配置把 `inode/directory` 映射到
   `yazi.desktop`（终端文件管理器），实际启动 `alacritty -e yazi <目录>`；
   而 niri 的 `windowrules.kdl` 把 `app-id="Alacritty"` 的窗口
@@ -343,18 +465,18 @@ chmod +x ~/Game/dst/run_shard.sh
   #+begin_src bash
   pkill -f "alacritty -e yazi .*Don't Starve Together Dedicated Server"
   #+end_src
+  Nushell（原样，纯外部命令）：
+  #+begin_src nu
+  pkill -f "alacritty -e yazi .*Don't Starve Together Dedicated Server"
+  #+end_src
 
 ** frpc: Bad fetch parameter
-
 见下面「命令行用法与错误对照」。
 
 * SakuraFrp (frpc)
-
 ** 安装：NixOS derivation
-
 nixpkgs 没有樱花客户端（只有原生 =frp=），所以自己包官方静态二进制。
 现有模块 =modules/nixos/desktop/networking/sakurafrp.nix=：
-
 #+begin_src nix
 { config, lib, pkgs, ... }:
 let
@@ -373,24 +495,19 @@ in
   environment.systemPackages = [ frpc ];
 }
 #+end_src
-
 - 升级：改 `version`、`url`、`hash`。取 hash 用
   =nix store prefetch-file <url>=。
 - 这是 Go 静态二进制，不需要 `autoPatchelfHook`；动态链接的话再加
   =autoPatchelfHook= + `glibc`/`stdenv.cc.cc.lib`，或靠已有的
   =programs.nix-ld=。
-
 ** 访问密钥与隧道
-
 - *没有账号密码登录*。CLI 的"登录"就是访问密钥（token）。
 - 密钥在网页端：登录 <https://www.natfrp.com/> → 用户中心 → *访问密钥*。
   *固定 16 位*（见下）。
 - 隧道在网页端建：隧道 → 新建 → 节点要支持 *UDP* → 类型 *UDP* →
   本地 `127.0.0.1:38271` / `38272` → 远程端口（系统分配或自填）。
 - 记下每条隧道的 *隧道 ID*、*节点地址*、*远程端口*。
-
 ** 命令行用法与错误对照
-
 #+begin_src bash
 # 启动该密钥下的所有隧道（如果版本支持省略 id）
 frpc -f <访问密钥>
@@ -399,6 +516,11 @@ frpc -f <访问密钥>
 frpc -f <访问密钥>:<隧道ID1>,<隧道ID2> -n --disable_log_color
 #+end_src
 
+Nushell（占位符用引号包起来，免得 =<= 被当语法）：
+#+begin_src nu
+frpc -f '<访问密钥>'
+frpc -f '<访问密钥>:<隧道ID1>,<隧道ID2>' -n --disable_log_color
+#+end_src
 - `-n` 跳过启动时的更新检查。
 - `--disable_log_color` 关彩色。
 - `-w` 把拉取到的配置写到 `frpc.ini`，调试用。
@@ -414,16 +536,19 @@ frpc -f <访问密钥>:<隧道ID1>,<隧道ID2> -n --disable_log_color
 | =[401] 访问密钥无效= | 长度对了，但密钥错误/过期 |
 
 ** 方案一：不写成服务（临时前台跑）
-
 #+begin_src bash
 cd /tmp
 sudo -u nobody env HOME=/tmp /run/current-system/sw/bin/frpc \
   -f '<访问密钥>:<隧道ID>' -n --disable_log_color
 #+end_src
 
+Nushell（=HOME=/tmp= 加引号；好处是不用写反斜杠续行）：
+#+begin_src nu
+cd /tmp
+sudo -u nobody env 'HOME=/tmp' /run/current-system/sw/bin/frpc -f '<访问密钥>:<隧道ID>' -n --disable_log_color
+#+end_src
 临时验证用。日志里看到隧道启动成功（`start proxy success` 之类）即可，
 Ctrl+C 结束。配合后文的 WiFi 策略路由使用。
-
 ** 方案二：systemd 服务（默认关闭、按需启停、sops 管密钥）
 
 需求：不开机自启，但可以随时 =systemctl start/stop=；访问密钥走 sops，
@@ -467,6 +592,14 @@ sops.secrets."sakura_frp_key" = {
 使用：
 
 #+begin_src bash
+sudo systemctl start  sakura-frp
+sudo systemctl stop   sakura-frp
+systemctl status      sakura-frp
+journalctl -u sakura-frp -f
+#+end_src
+
+Nushell（原样，纯外部命令）：
+#+begin_src nu
 sudo systemctl start  sakura-frp
 sudo systemctl stop   sakura-frp
 systemctl status      sakura-frp
@@ -533,6 +666,15 @@ ip route get 1.1.1.1              # 当前进程会怎么走
 ip route get 1.1.1.1 uid 65534    # 以 uid 65534 查会怎么走
 #+end_src
 
+Nushell（IP 加引号，避免被当数字解析）：
+#+begin_src nu
+ip rule show                      # 所有策略规则
+ip route show table main          # 默认表
+ip route show table 100           # 自定义表
+ip route get '1.1.1.1'            # 当前进程会怎么走
+ip route get '1.1.1.1' uid 65534  # 以 uid 65534 查会怎么走
+#+end_src
+
 * 让 frpc 走 WiFi
 
 背景：有线（192.168.1.1）连不上樱花节点，WiFi（10.35.184.32）可以。
@@ -549,6 +691,16 @@ nmcli connection up "YCroaker的呆毛"
 
 ip route | grep default     # 确认 wlp1s0 的 metric 最小
 ip route get 1.1.1.1        # 应显示 dev wlp1s0
+#+end_src
+
+Nushell（把 =grep= 换成 =lines | where= ）：
+#+begin_src nu
+nmcli connection modify "YCroaker的呆毛" ipv4.route-metric 50 ipv6.route-metric 50
+nmcli connection modify "Wired connection 1" ipv4.route-metric 600 ipv6.route-metric 600
+nmcli connection up "YCroaker的呆毛"
+
+ip route | lines | where ($it =~ 'default')   # 确认 wlp1s0 的 metric 最小
+ip route get '1.1.1.1'                         # 应显示 dev wlp1s0
 #+end_src
 
 - 代价：*所有*出网都走 WiFi。
@@ -580,10 +732,30 @@ sudo -u nobody env HOME=/tmp /run/current-system/sw/bin/frpc \
   -f '<访问密钥>:<隧道ID1>,<隧道ID2>' -n --disable_log_color
 #+end_src
 
+Nushell（等价；`65534-65534` 记得加引号）：
+#+begin_src nu
+let wg = (nmcli -g IP4.GATEWAY device show wlp1s0 | str trim)
+
+sudo ip route replace default via $wg dev wlp1s0 table 100
+sudo ip rule add uidrange '65534-65534' lookup 100 priority 8000
+
+ip route get '1.1.1.1' uid 65534
+ip route get '1.1.1.1'
+
+cd /tmp
+sudo -u nobody env 'HOME=/tmp' /run/current-system/sw/bin/frpc -f '<访问密钥>:<隧道ID1>,<隧道ID2>' -n --disable_log_color
+#+end_src
+
 清理（重启也会自动消失）：
 
 #+begin_src bash
 sudo ip rule del uidrange 65534-65534 lookup 100 priority 8000
+sudo ip route flush table 100
+#+end_src
+
+Nushell：
+#+begin_src nu
+sudo ip rule del uidrange '65534-65534' lookup 100 priority 8000
 sudo ip route flush table 100
 #+end_src
 
@@ -592,6 +764,12 @@ sudo ip route flush table 100
 #+begin_src bash
 sudo ss -tnp | grep frpc              # 非 root 看不到别人进程名，要 sudo
 ss -tn | grep 10.35.184.182           # 或按源地址过滤，不需要 root
+#+end_src
+
+Nushell：
+#+begin_src nu
+sudo ss -tnp | lines | where ($it =~ 'frpc')
+ss -tn | lines | where ($it =~ '10.35.184.182')
 #+end_src
 
 配套的 Nushell 脚本见 =~/Game/dst/frpc-wifi.nu=（可 setup/run/status/clean）。
@@ -687,12 +865,18 @@ in
 比 frp 更省心，代价是朋友要装 Tailscale。
 
 * 速查
-
 ** 开服
 
 #+begin_src bash
 ~/Game/dst/run_shard.sh JunXun Master
 ~/Game/dst/run_shard.sh JunXun Caves
+#+end_src
+
+Nushell：
+#+begin_src nu
+let sh = $"($env.HOME)/Game/dst/run_shard.sh"
+^$sh JunXun Master
+^$sh JunXun Caves
 #+end_src
 
 ** frpc
@@ -702,6 +886,17 @@ in
 cd /tmp
 sudo -u nobody env HOME=/tmp /run/current-system/sw/bin/frpc \
   -f '<访问密钥>:<隧道ID>' -n --disable_log_color
+
+# 按需 systemd
+sudo systemctl start sakura-frp
+journalctl -u sakura-frp -f
+#+end_src
+
+Nushell：
+#+begin_src nu
+# 临时前台
+cd /tmp
+sudo -u nobody env 'HOME=/tmp' /run/current-system/sw/bin/frpc -f '<访问密钥>:<隧道ID>' -n --disable_log_color
 
 # 按需 systemd
 sudo systemctl start sakura-frp
@@ -720,26 +915,50 @@ sudo ip rule del uidrange 65534-65534 lookup 100 priority 8000
 sudo ip route flush table 100
 #+end_src
 
-** Nushell 版（临时）
-
+Nushell：
 #+begin_src nu
 let wg = (nmcli -g IP4.GATEWAY device show wlp1s0 | str trim)
 sudo ip route replace default via $wg dev wlp1s0 table 100
 sudo ip rule add uidrange '65534-65534' lookup 100 priority 8000
 ip route get '1.1.1.1' uid 65534
+# 清理
+sudo ip rule del uidrange '65534-65534' lookup 100 priority 8000
+sudo ip route flush table 100
 #+end_src
 
-* 相关文件
+** bash ↔ Nushell 速查
 
-- =~/Game/dst/run_shard.sh=：开服脚本。
+- 定义变量：=X=...= → =let x = ...=
+- 引用：=$X= / =${X}= → =$x=
+- 命令替换：=$(cmd)= → =(cmd)=
+- 字符串插值：="a $X b"= → =$"a ($x) b"=
+- 环境变量：=$HOME= / =$VAR= → =$env.HOME= / =$env.VAR=
+- 可选环境变量：=${VAR:-def}= → =($env.VAR? | default 'def')=
+- 管道过滤：=... | grep pat= → =... | lines | where ($it =~ 'pat')=
+- 目录是否存在：=[ -d p ]= → =(p | path exists)=
+- 读文件：=$(cat f)= → =(open f)=
+- 字符串包含：=grep -q x f= → =((open f) | str contains 'x')=
+- 写文件：=echo x > f= → ='x' | save -f f=
+- 变量当命令：=$cmd args= → =^$cmd args=
+- 报错退出：=echo err >&2; exit 1= → =error make { msg: 'err' }=
+- 函数：=foo() { ... }= → =def foo [] { ... }=
+- 路径拼接：="$DIR/$FILE" → =$"($dir)/($file)"=
+
+小坑：
+- 整数区间 =65534-65534=、IP =1.1.1.1=、=HOME=/tmp= 这类参数最好加引号，
+  否则 nu 可能按表达式解析。
+- 外部命令参数里的 =~= 不会展开，要用 =$env.HOME= 或 =$"($env.HOME)/..."=。
+- 中间表达式一旦被 nu 命令（=lines=、=where= 等）转成结构化值就不会自动打印，
+  需要 =print (...)=；纯外部命令的输出会直接透传。
+* 相关文件
+- =~/Game/dst/run_shard.sh=：开服脚本（bash）。
+- =~/Game/dst/run_shard.nu=：开服脚本的 Nushell 对照版。
 - =~/Game/dst/frpc-wifi.nu=：nobody + WiFi 策略路由的 Nushell 脚本。
 - =modules/nixos/desktop/networking/sakurafrp.nix=：frpc 包与（可选）服务。
 - =home/linux/gui/base/desktop-tools.nix=：曾因全局 `SDL_VIDEODRIVER` 引发客户端崩溃。
 - =home/linux/gui/base/xdg/mime.nix=：`inode/directory` 的默认处理程序。
 - =home/linux/gui/niri/conf/windowrules.kdl=：Alacritty → workspace 1 的规则。
-
 * 参考
-
 - frpc 基本使用指南：<https://doc.natfrp.com/frpc/usage.html>
 - frpc 用户手册：<https://doc.natfrp.com/frpc/manual.html>
 - systemd 配置 frpc 服务：<https://doc.natfrp.com/frpc/service/systemd.html>
