@@ -36,6 +36,8 @@ let
           #  modules.secrets.preservation.enable = true;
           modules.desktop.gaming.enable = true;
           modules.editors.emacs.enable = true;
+          # Local backend for Doom Emacs' `zotra' (translation-server backend).
+          modules.desktop.zotero-translation-server.enable = true;
         }
       ];
     home-modules =
