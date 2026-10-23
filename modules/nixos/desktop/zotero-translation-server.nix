@@ -18,7 +18,14 @@ in
   options.modules.desktop.zotero-translation-server = {
     enable = lib.mkEnableOption "the Zotero translation server";
 
-    package = lib.mkPackageOption pkgs "zotero-translation-server" { };
+    # The packaged 2023 release uses config@4.1.1, which calls the
+    # util.isRegExp() API that Node 24 removed; pin the runtime to Node 22.
+    package = lib.mkOption {
+      type = lib.types.package;
+      default = pkgs.zotero-translation-server.override { nodejs = pkgs.nodejs_22; };
+      defaultText = lib.literalExpression "pkgs.zotero-translation-server.override { nodejs = pkgs.nodejs_22; }";
+      description = "The zotero-translation-server package to use.";
+    };
 
     host = lib.mkOption {
       type = lib.types.str;
