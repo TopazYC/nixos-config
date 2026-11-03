@@ -8,7 +8,6 @@ This is my first try to learn NixOS and build my own configuration block by bloc
 3. live iso
 4. wifi
 5. fcitx5 refresh and sync.
-6. the proxy of edge
 ** BUGs
 1. there is a vsock bug of systemd on Hyper-V. This will be solved in v360 in the future.`
    But I will not use NixOS in Hyper-V later.
@@ -18,5 +17,5 @@ This is my first try to learn NixOS and build my own configuration block by bloc
 - fc95a997-299b-46ef-bc9d-75d4101d592a
 - DST
 97ac9006-2416-4fce-9df9-ebaa8cd5a612
-
+- bibs ea9d449a-a781-4f42-8c08-ab28ce7a03fb
 

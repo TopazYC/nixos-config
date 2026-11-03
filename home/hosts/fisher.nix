@@ -25,6 +25,26 @@ in
   modules.desktop.niri.enable = true;
   modules.desktop.office.enable = true;
 
+  # Tray icon for the system-wide Syncthing service (see
+  # modules/nixos/desktop/networking/syncthing.nix). It talks to the local
+  # GUI on 127.0.0.1:8384.
+  #
+  # Not using home-manager's `services.syncthing.tray` here: that unit has
+  # `Requires = [ "tray.target" ]`, which niri does not provide, so it would
+  # fail to start.
+  systemd.user.services.syncthingtray = {
+    Unit = {
+      Description = "Syncthing tray";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.syncthingtray-minimal}/bin/syncthingtray --wait";
+      Restart = "on-failure";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+
   # PC: keep the screen on longer than on the laptop.
   #  modules.desktop.hypridle = {
   #    keyboardBacklightTimeout = 900;

@@ -81,7 +81,7 @@ in
       # :lang cc
       clang-tools
       # :lang latex & :lang org (latex previews)
-      texliveMedium
+      (texliveMedium.withPackages (ps: [ ps.mylatexformat ]))
       # :lang nix
       age
       # :lang python
