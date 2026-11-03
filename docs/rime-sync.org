@@ -1,0 +1,480 @@
+#+title: Fcitx5 Rime 用户数据同步（RimeSync）
+#+subtitle: rime_dict_manager、Syncthing 与登录时 systemd 自动同步的完整记录
+#+date: 2026-11-03
+#+filetags: :rime:fcitx5:syncthing:nixos:
+#+startup: overview
+
+本文件记录 Fisher 上 Fcitx5/Rime 的用户词库如何通过 Syncthing 的
+=RimeSync= 文件夹在设备间同步，以及如何用 systemd user service 在登录时
+自动触发 Rime 自己的 sync。内容包括已经验证过的命令、失败的尝试、失败
+原因和最终取舍，给未来的自己和 agent 会话参考。
+
+* 结论速记
+
+1. Rime 的“同步”不是 Syncthing 的功能。GUI 菜单里的同步是 fcitx5-rime
+   addon 在 *fcitx5 进程内* 调用 librime；命令行等价物是
+   =rime_dict_manager --sync=。
+2. =rime_dict_manager= 必须在 =~/.local/share/fcitx5/rime= 里运行，因为它
+   从 *当前目录* 的 =installation.yaml= 读 =installation_id= 和 =sync_dir=。
+3. fcitx5 运行时持有 =rime_ice.userdb= 的 LevelDB 锁，独立进程跑
+   =rime_dict_manager --sync= 会失败：
+   =IO error: lock .../rime_ice.userdb/LOCK: Resource temporarily unavailable=。
+4. 自动化最终选择 *登录时、fcitx5 启动之前* 跑一次：
+   =Before=fcitx5-daemon.service= + =WantedBy=default.target=。
+   不装 timer，不停/起 fcitx5，所以不会有输入法闪烁。
+5. Syncthing 继续常驻做传输；Rime 只在 sync 时改写
+   =RimeSync/<installation_id>/*.userdb.txt=，所以 Syncthing 不会因为
+   打字而持续产生大量变更。
+6. 代价：一直不注销、连续挂机多天时，中间不会自动再同步；需要注销重登，
+   或手动 =systemctl --user start rime-sync=（前提是 fcitx5 没在跑）。
+
+* 组件与数据流
+** 一句话数据流
+=~/.local/share/fcitx5/rime= 里的本地 userdb
+↔ =~/Syncthing/RimeSync/<installation_id>/<dict>.userdb.txt=
+↔ Syncthing 文件夹 =RimeSync= ↔ 手机 / 其它电脑上的同一文件夹。
+
+** 关键路径
+
+| 路径 | 作用 |
+|------+------|
+| =~/.local/share/fcitx5/rime/= | Fcitx5 的 Rime 用户目录（user data dir） |
+| =.../installation.yaml= | 本机 Rime 身份：=installation_id=、=sync_dir= |
+| =.../rime_ice.userdb/= | 本地用户词库，LevelDB 目录 |
+| =~/Syncthing/RimeSync/= | Rime 的 =sync_dir=，也是 Syncthing 文件夹根 |
+| =.../Fisher/rime_ice.userdb.txt= | 本机导出的快照（文本格式） |
+| =.../Redmi-K80u/rime_ice.userdb.txt= | 手机导出的快照 |
+| =.../.stfolder/= | Syncthing 的文件夹标记，不要删 |
+
+当前 =installation.yaml= 的实际内容（2026-11-03）：
+
+#+begin_src yaml
+distribution_code_name: "fcitx-rime"
+distribution_name: Rime
+distribution_version: 5.1.16
+install_time: "Tue Sep 29 11:51:51 2026"
+installation_id: "Fisher"
+sync_dir: "/home/Topaz/Syncthing/RimeSync"
+rime_version: 1.17.0
+#+end_src
+
+当前 =RimeSync= 下的快照目录有 =Fisher=、=LAPTOP-Ubuntu=、=LAPTOP-Win=、
+=Redmi=、=Redmi-K80u=；本机真正会合并的是本机也存在 userdb 的词库
+（目前 =rime_dict_manager -l= 只列出 =rime_ice=）。
+
+=Redmi-K80u= 下还有一个 =luna_pinyin.userdb.txt=，但本机没有
+=luna_pinyin.userdb=，所以本机 sync 不会合并它；这是“只处理本地存在的
+词库”的正常行为，不是文件损坏。
+
+** Rime 的 sync 到底做了什么
+
+=librime= 的 =UserDictManager::SynchronizeAll()= 逻辑（简化）：
+
+1. 扫描 *当前目录* 下的 =*.userdb= 目录，得到本地存在的用户词库列表；
+2. 对每个词库，遍历 =sync_dir= 的每个子目录；
+3. 如果子目录里有 =<dict>.userdb.txt=，就把它合并进本地 userdb；
+4. 最后把本地 userdb 导出为 =sync_dir/<installation_id>/<dict>.userdb.txt=。
+
+所以一次 sync 同时做了两件事：
+
+- 把 *所有设备* 的快照合并进本机词库；
+- 只覆盖 *本机自己的* 快照，不会改写别的设备目录。
+
+它不同步 schema、=default.yaml= 等配置。=RimeSync/<device>/= 里出现的
+这些 YAML 不是 =rime_dict_manager= 写的，可能是手动放置或别的流程留下的；
+自动化的 =rime_dict_manager --sync= 只处理 =*.userdb.txt=。
+
+** 为什么必须 =cd=
+
+=librime= 的 =Deployer= 默认 =user_data_dir= 是 ="."=，而
+=rime_dict_manager= 只从当前目录读 =installation.yaml=。在仓库目录里跑会
+得到：
+
+#+begin_src text
+no user dictionary is found.
+#+end_src
+
+因为当前目录下没有 =*.userdb=。正确做法：
+
+#+begin_src sh
+cd ~/.local/share/fcitx5/rime
+rime_dict_manager --sync
+#+end_src
+
+* Syncthing 侧
+
+** 文件夹与设备
+
+| 项目 | 值 |
+|------+----|
+| 文件夹 ID | =rqc6i-sysoa= |
+| 标签 | =RimeSync= |
+| 路径 | =~/Syncthing/RimeSync= |
+| 类型 | =sendreceive= |
+| fsWatcher | 开启，延迟 10s |
+| 本机设备 | =Fisher=，=HJFJJMB-WFTUKO7-...=（由证书决定） |
+| 远端设备 | =REDMI-K80U=，=JDHDOJQ-HE5T6OJ-...= |
+
+本机设备条目是 Syncthing 自己维护的，*不要*写进
+=services.syncthing.settings.devices=；只声明远端设备。
+
+** 声明式配置
+
+=modules/nixos/desktop/networking/syncthing.nix= 里已经用
+=services.syncthing.settings= 声明了设备和文件夹。要点：
+
+- =overrideDevices= / =overrideFolders= 默认是 =true=；
+- 在 GUI 里新加的设备/文件夹，下次 activation 会被删掉；
+- 要加就加在 Nix 里，并且一次列全；
+- 文件夹 ID *必须保持* =rqc6i-sysoa=，否则手机端会认为是新文件夹；
+- 模块不是直接覆盖 =config.xml=，而是 =syncthing-init.service= 在启动后
+  通过 REST API 把声明推给 Syncthing。详见模块头部注释。
+
+Syncthing 只负责搬运 =RimeSync= 里的文件；Rime 的合并逻辑仍然在
+=librime= 里。图形界面在 =http://127.0.0.1:8384=（只绑定 localhost）。
+
+* 自动同步：登录时、fcitx5 之前
+
+** 文件
+
+=home/linux/gui/base/rime-sync.nix=（会被 =home/linux/gui/base/default.nix=
+的 =scanPaths= 自动 import）。
+
+** unit 形状
+
+#+begin_src nix
+systemd.user.services.rime-sync = {
+  Unit = {
+    Description = "Sync Fcitx5 Rime user data at login";
+    Before = [ "fcitx5-daemon.service" ];
+    ConditionPathExists = "%h/.local/share/fcitx5/rime/installation.yaml";
+  };
+  Service = {
+    Type = "oneshot";
+    ExecStart = rimeSync;
+    TimeoutStartSec = "30s";
+  };
+  Install.WantedBy = [ "default.target" ];
+};
+#+end_src
+
+脚本本体：
+
+#+begin_src sh
+set -u
+cd "$HOME/.local/share/fcitx5/rime"
+exec <librime>/bin/rime_dict_manager --sync
+#+end_src
+
+其中 =<librime>= 是 =pkgs.librime=；当前版本 1.17.0，和 fcitx5-rime
+5.1.16 内置的 librime 同版本。
+
+** 为什么是 =default.target=
+
+- =default.target= 是 user manager 启动时最早的一批目标之一；
+- niri / =graphical-session.target= / =fcitx5-daemon.service= 都在它之后；
+- =Before=fcitx5-daemon.service= 再保证 fcitx5 等同步结束后才启动；
+- 因此同步时 fcitx5 还没拿到 userdb 锁，不需要停/起输入法。
+
+** 登录语义
+
+=default.target= 在每个 systemd user manager 生命周期里只启动一次。所以：
+
+| 操作 | 会重新触发 =rime-sync= 吗 |
+|------+---------------------------|
+| niri 注销 / 退出会话，回到 greetd | 会（下次登录） |
+| 关机 / 重启 | 会（下次登录） |
+| 锁屏 | 不会 |
+| 挂起 / 休眠后唤醒 | 不会 |
+| =systemctl --user restart niri.service= 或 niri 内部重启 | 不会（user manager 还在） |
+| =just local= / =nixos-rebuild switch= | 不会，只是安装/更新 unit |
+
+当前是 greetd + =niri-session=，=Linger=no=，正常注销会结束 user
+manager；下次登录 =default.target= 重新计时。可以用下面的命令确认：
+
+#+begin_src sh
+systemctl --user show default.target -p ActiveEnterTimestamp
+loginctl show-user Topaz -p Linger -p State
+#+end_src
+
+如果只是重启了 niri（没有注销），unit 不会自动再跑。手动补一次需要先停
+fcitx5（见“手动同步”）。
+
+** 为什么没有 timer / 日期戳
+
+早期实现过一版：
+
+- =OnStartupSec=15s= + =OnUnitActiveSec=1h=；
+- 用 =~/.local/state/rime-sync/last= 做日期戳，保证每天最多一次；
+- 如果 fcitx5 在跑，就 =systemctl --user stop fcitx5-daemon=，
+  同步完再 start。
+
+它能工作，但每天会有一次输入法重启/闪烁；用户明确更想要“登录时、fcitx5
+之前跑”，所以最终删掉了 timer、日期戳和 stop/start 逻辑。现在每次登录都
+同步一次，不再有“今天已经同步过”的跳过逻辑。
+
+* 踩坑与试错记录
+
+** 坑 1：在错误目录运行 → =no user dictionary is found=
+
+最初在仓库目录直接跑 =rime_dict_manager -l=，输出：
+
+#+begin_src text
+no user dictionary is found.
+#+end_src
+
+原因不是没装词库，而是当前目录没有 =*.userdb=，也没有
+=installation.yaml=。=cd ~/.local/share/fcitx5/rime= 后就能列出
+=rime_ice=。
+
+** 坑 2：fcitx5 持有 LevelDB 锁
+
+fcitx5 运行时直接跑：
+
+#+begin_src sh
+cd ~/.local/share/fcitx5/rime
+rime_dict_manager --sync
+#+end_src
+
+失败：
+
+#+begin_src text
+E... level_db.cc:259] Error opening db 'rime_ice': IO error: lock
+/home/Topaz/.local/share/fcitx5/rime/./rime_ice.userdb/LOCK:
+Resource temporarily unavailable
+E... user_dict_manager.cc:198] failed to merge snapshot file: ...
+E... user_dict_manager.cc:204] error backing up user dict 'rime_ice'.
+E... user_dict_manager.cc:220] failed synchronizing 1/1 user dicts.
+#+end_src
+
+原因：fcitx5 进程里的 Rime engine 打开了 =rime_ice.userdb=，LevelDB 用
+=LOCK= 文件做独占锁；=rime_dict_manager= 是另一个进程，拿不到锁。
+
+解决办法只有让 fcitx5 释放锁：停掉 =fcitx5-daemon.service=，或者让同步
+发生在它启动之前。
+
+** 坑 3：重载 Rime addon 不放锁
+
+试过只重载 addon，避免整个 fcitx5 重启：
+
+#+begin_src sh
+busctl --user call org.fcitx.Fcitx5 /controller \
+  org.fcitx.Fcitx.Controller1 ReloadAddonConfig s rime
+#+end_src
+
+命令返回成功，但随后 =rime_dict_manager --sync= 仍然报同样的
+=LOCK= 错误。结论：重载 addon 不足以释放 userdb；不要把它当成 workaround。
+
+** 坑 4：没有可直接调用的 DBus “sync” 方法
+
+introspect 过：
+
+#+begin_src sh
+busctl --user introspect org.fcitx.Fcitx5 /rime
+busctl --user introspect org.fcitx.Fcitx5 /controller
+#+end_src
+
+=/rime= 只有 =GetCurrentSchema=、=SetSchema=、=IsAsciiMode= 等；
+=/controller= 也没有 action/sync 方法。fcitx5-rime 的“同步”是注册给
+UI 的 action（字符串里有 =fcitx_rime_sync=），不能从 DBus 直接触发。
+所以自动化只能用独立的 =rime_dict_manager=，也就必须处理锁。
+
+** 坑 5：agent 沙箱里的“假故障”
+
+在 agent 的 workspace-write 沙箱里跑真实同步时，会看到另一组错误：
+
+#+begin_src text
+Error opening db '.temp': NotFound:
+/home/Topaz/.local/share/fcitx5/rime/./.temp.userdb/LOCK:
+No such file or directory
+Error opening db 'rime_ice' read-only.
+#+end_src
+
+这不是 fcitx5 锁，而是沙箱只允许写仓库目录，=rime_dict_manager= 无法在
+=~/.local/share/fcitx5/rime= 下创建 =.temp.userdb=，也无法写回 userdb。
+同样的命令在沙箱外（或 =danger-full-access=）就能成功：
+
+#+begin_src text
+sync dir: /home/Topaz/Syncthing/RimeSync
+user id: Fisher
+sync exit=0
+#+end_src
+
+未来 agent 看到 =.temp.userdb/LOCK: No such file or directory= 时，先检查
+是不是沙箱，不要误判成 Rime 坏了。
+
+** 坑 6：unit 名字不是 =fcitx5.service=
+
+机器上实际存在的是：
+
+#+begin_src text
+fcitx5-daemon.service   Fcitx5 input method editor
+#+end_src
+
+=fcitx5.service= 不存在。=Before=、=systemctl stop/start= 都要用
+=fcitx5-daemon.service=。
+
+** 坑 7：=nixos-rebuild switch= 不会触发登录 unit
+
+=rime-sync= 是 =WantedBy=default.target=，而当前 user manager 的
+=default.target= 早已 active。=switch= 只是安装/更新 unit，不会重新走
+=default.target= 的启动流程。必须注销重登，或者手动：
+
+#+begin_src sh
+systemctl --user stop fcitx5-daemon
+systemctl --user start rime-sync
+systemctl --user start fcitx5-daemon
+#+end_src
+
+** 坑 8：注销 ≠ 锁屏/挂起/重启 niri
+
+=default.target= 只在 user manager 启动时跑一次。锁屏、挂起、唤醒、
+=systemctl --user restart niri.service= 都不会结束 user manager，因此
+不会触发。真正注销（回到 greetd）或重启机器才会。
+
+* 验证与操作
+
+** 查看当前 Rime 配置
+
+#+begin_src sh
+cat ~/.local/share/fcitx5/rime/installation.yaml
+cd ~/.local/share/fcitx5/rime
+rime_dict_manager -l          # 应输出 rime_ice
+#+end_src
+
+如果 =rime_dict_manager= 不在 PATH，用：
+
+#+begin_src sh
+cd ~/.local/share/fcitx5/rime
+nix shell nixpkgs#librime -c rime_dict_manager -l
+#+end_src
+
+** 手动同步一次
+
+必须先停 fcitx5，否则会报锁错误：
+
+#+begin_src sh
+systemctl --user stop fcitx5-daemon.service
+cd ~/.local/share/fcitx5/rime
+nix shell nixpkgs#librime -c rime_dict_manager --sync
+systemctl --user start fcitx5-daemon.service
+#+end_src
+
+成功时输出：
+
+#+begin_src text
+sync dir: /home/Topaz/Syncthing/RimeSync
+user id: Fisher
+#+end_src
+
+并更新 =~/Syncthing/RimeSync/Fisher/rime_ice.userdb.txt=。之后 Syncthing
+的 fsWatcher 会在约 10 秒后把变更推给其它在线设备。
+
+** 手动触发登录 unit（当前会话）
+
+#+begin_src sh
+systemctl --user stop fcitx5-daemon.service
+systemctl --user start rime-sync.service
+systemctl --user start fcitx5-daemon.service
+journalctl --user -u rime-sync -n 50 --no-pager
+#+end_src
+
+** 查看登录 unit 状态
+
+#+begin_src sh
+systemctl --user status rime-sync.service
+systemctl --user show default.target -p ActiveEnterTimestamp
+journalctl --user -u rime-sync -b --no-pager
+#+end_src
+
+* 故障排查表
+
+| 现象 | 原因 | 处理 |
+|------+------+------|
+| =no user dictionary is found.= | 不在 =~/.local/share/fcitx5/rime= 里跑 | =cd= 过去再跑 |
+| =LOCK: Resource temporarily unavailable= | fcitx5 正在运行，持有 userdb 锁 | 停 =fcitx5-daemon.service=，或依赖登录时的 =Before= 顺序 |
+| =failed to merge snapshot file= / =error backing up user dict= | 同上，锁导致整个 sync 失败 | 同上；修复后重跑，不要当成已同步 |
+| =.temp.userdb/LOCK: No such file or directory=（agent 会话） | workspace-write 沙箱不允许写家目录 | 在沙箱外或 full-access 下重试 |
+| =switch= 后 unit 没跑 | =default.target= 已经 active | 注销重登，或手动 start |
+| 同步成功但手机没更新 | 手机端没跑 Rime sync；Syncthing 离线/文件夹暂停 | 先在手机端触发 sync，再检查 Syncthing GUI |
+| 出现 =.sync-conflict-*= 文件 | 两端在 Syncthing 同步前都改了同一个快照 | Rime 只认 =<dict>.userdb.txt=，冲突文件不会自动合并；手动检查/清理 |
+| 两台机器 =installation_id= 相同 | 快照目录互相覆盖 | 每台设备用唯一 =installation_id= |
+
+* 未来注意 / 可选扩展
+
+** 手机端
+
+这个自动化只覆盖 *Fisher 桌面端*。手机（Trime/Rime）还需要它自己触发
+一次 sync（打开 App、手动点同步，或用 Termux/Tasker 定时跑等）。
+桌面端能做的只是把 Fisher 的快照导出并把其它设备的快照合并进来。
+
+** 如果想“一直登录也每天同步”
+
+需要重新引入 timer，并且因为 fcitx5 的锁，基本只有两条路：
+
+1. timer 触发时短暂 =stop/start fcitx5=，接受一次输入法闪烁；
+2. 让 timer 只做提醒/写标记，真正的 sync 留到下次登录。
+
+当前选择的是“登录时一次”，没有 timer。
+
+** 版本耦合
+服务里用的是 =pkgs.librime= 的 =rime_dict_manager=，而 fcitx5-rime 自己
+也带了一份 =librime.so=。两者当前都是 1.17.0。升级 nixpkgs 后如果版本
+分叉，LevelDB 格式/同步行为可能不一致；升级后先手动跑一次验证。
+** 备份与冲突
+=RimeSync= 里保存了所有设备的快照。=rime_dict_manager= 会把 *所有*
+快照合并进本机，所以旧的/冲突的快照可能把旧词条带回来。大改之前先备份
+（最好先停 fcitx5，避免拷到写了一半的 LevelDB）：
+
+#+begin_src sh
+systemctl --user stop fcitx5-daemon.service
+cp -a ~/.local/share/fcitx5/rime ~/rime-backup-$(date +%F)
+cp -a ~/Syncthing/RimeSync ~/RimeSync-backup-$(date +%F)
+systemctl --user start fcitx5-daemon.service
+#+end_src
+
+** 配置文件的同步
+
+当前自动化只同步 =*.userdb.txt=（用户词库）。schema、=default.yaml=、
+主题等配置不在 =rime_dict_manager= 的职责里；如果也要跨设备同步，需要
+另外复制文件或使用专门的配置管理，不要误以为 =RimeSync= 会自动处理。
+
+* 相关文件
+
+- =modules/nixos/desktop/networking/syncthing.nix=：Syncthing 声明式配置
+- =home/linux/gui/base/rime-sync.nix=：登录时 Rime sync 的 systemd unit
+- =home/linux/gui/base/fcitx5/default.nix=：fcitx5 / fcitx5-rime 安装
+- =docs/rime-sync.org=：本文件
+- 运行时：=~/.local/share/fcitx5/rime/=、=~/Syncthing/RimeSync/=
+
+* 版本与验证记录
+
+| 项目 | 版本 / 值 |
+|------+-----------|
+| 日期 | 2026-11-03 |
+| 主机 | Fisher（NixOS，stateVersion 25.11） |
+| 会话 | greetd + niri |
+| Syncthing | 2.1.3 |
+| fcitx5 | 5.1.23 |
+| fcitx5-rime | 5.1.16 |
+| librime | 1.17.0 |
+| 文件夹 ID | =rqc6i-sysoa= |
+| 本机 installation_id | =Fisher= |
+
+已验证：
+
+- 在 =~/.local/share/fcitx5/rime= 下 =rime_dict_manager -l= 能列出
+  =rime_ice=；
+- fcitx5 运行时 =--sync= 报 LevelDB 锁错误；
+- 停 =fcitx5-daemon.service= 后 =--sync= 成功，退出码 0，快照文件更新；
+- =ReloadAddonConfig rime= 不放锁；
+- systemd user service 里 =systemctl --user= 可用；
+- 登录 unit 的 =Before=、=WantedBy=、=ConditionPathExists= 能通过
+  =nix eval= 求出；
+- =nixfmt=、shell 语法检查通过。
+
+未验证/待观察：
+
+- 不同 niri 启动方式（例如从 TTY 手动启动）下，注销是否一定结束 user
+  manager；当前 greetd + =niri-session= 环境按预期工作。
+- 手机端的自动触发方案。
