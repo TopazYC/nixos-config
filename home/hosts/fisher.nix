@@ -21,7 +21,9 @@ in
     enable = true;
   };
 
+  modules.desktop.camera.enable = true;
   modules.desktop.gaming.enable = true;
+  modules.desktop.sing-audio.enable = true;
   modules.desktop.niri.enable = true;
   modules.desktop.office.enable = true;
 

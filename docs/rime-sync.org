@@ -425,28 +425,22 @@ journalctl --user -u rime-sync -b --no-pager
 =RimeSync= 里保存了所有设备的快照。=rime_dict_manager= 会把 *所有*
 快照合并进本机，所以旧的/冲突的快照可能把旧词条带回来。大改之前先备份
 （最好先停 fcitx5，避免拷到写了一半的 LevelDB）：
-
 #+begin_src sh
 systemctl --user stop fcitx5-daemon.service
 cp -a ~/.local/share/fcitx5/rime ~/rime-backup-$(date +%F)
 cp -a ~/Syncthing/RimeSync ~/RimeSync-backup-$(date +%F)
 systemctl --user start fcitx5-daemon.service
 #+end_src
-
 ** 配置文件的同步
-
 当前自动化只同步 =*.userdb.txt=（用户词库）。schema、=default.yaml=、
 主题等配置不在 =rime_dict_manager= 的职责里；如果也要跨设备同步，需要
 另外复制文件或使用专门的配置管理，不要误以为 =RimeSync= 会自动处理。
-
 * 相关文件
-
 - =modules/nixos/desktop/networking/syncthing.nix=：Syncthing 声明式配置
 - =home/linux/gui/base/rime-sync.nix=：登录时 Rime sync 的 systemd unit
 - =home/linux/gui/base/fcitx5/default.nix=：fcitx5 / fcitx5-rime 安装
 - =docs/rime-sync.org=：本文件
 - 运行时：=~/.local/share/fcitx5/rime/=、=~/Syncthing/RimeSync/=
-
 * 版本与验证记录
 
 | 项目 | 版本 / 值 |
